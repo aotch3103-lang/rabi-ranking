@@ -1439,7 +1439,10 @@ function renderSettingsTab(){
         lastDupGroups.forEach(g=>{
           const line = document.createElement('div');
           line.style.cssText = 'font-size:11.5px;color:var(--ink);padding:6px 0;border-bottom:1px solid var(--line);';
-          line.innerHTML = `<b>${escapeHtml(g.jan)}</b>：${g.players.map(p=>`${p.games}戦`).join(' / ')}（一番対局数が多い記録を残して統合します）`;
+          const overlapNote = g.overlapDates > 0
+            ? `<br><span style="color:#B3401E;">⚠️ うち${g.overlapDates}日分は日付が重なっています（重なった日は合算せず、記録が多い方のデータを優先します）</span>`
+            : '';
+          line.innerHTML = `<b>${escapeHtml(g.jan)}</b>：${g.players.map(p=>`${p.games}戦`).join(' / ')}（一番対局数が多い記録を残して統合します）${overlapNote}`;
           dupResultWrap.appendChild(line);
         });
         mergeDupBtn.style.display = 'inline-block';
