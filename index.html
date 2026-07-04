@@ -626,7 +626,15 @@ function renderAdmin(){
   const tabEntry = el('button','tab-btn'+(state.adminTab==='entry'?' active':''),'成績入力');
   const tabImport = el('button','tab-btn'+(state.adminTab==='import'?' active':''),'取込');
   const tabSettings = el('button','tab-btn'+(state.adminTab==='settings'?' active':''),'設定');
-  tabPlayers.onclick = ()=>{ state.adminTab='players'; render(); window.scrollTo(0,0); };
+  tabPlayers.onclick = async ()=>{
+    state.adminTab='players'; render(); window.scrollTo(0,0);
+    // タブを開くたびに最新の選手一覧を取り直し、他端末での変更の取りこぼしを防ぐ
+    try{
+      const fresh = await getStoreRetry('players', state.players);
+      state.players = fresh.value;
+      if(state.adminTab==='players') render();
+    }catch(e){ /* 失敗時は手元のデータのまま表示を維持 */ }
+  };
   tabEntry.onclick = ()=>{ state.adminTab='entry'; render(); window.scrollTo(0,0); };
   tabImport.onclick = ()=>{ state.adminTab='import'; render(); window.scrollTo(0,0); };
   tabSettings.onclick = ()=>{ state.adminTab='settings'; render(); window.scrollTo(0,0); };
@@ -696,6 +704,15 @@ function renderPlayersTab(){
     const excl = document.getElementById('newExcl').checked;
     const boy = document.getElementById('newBoy').checked;
     if(!jan){ toast('じゃんネームを入力してください'); return; }
+    // 他の端末・タブでの変更を取りこぼさないよう、追加の直前に必ず最新の選手一覧を取得し直す
+    try{
+      const fresh = await getStoreRetry('players', state.players);
+      state.players = fresh.value;
+    }catch(e){ /* 取得に失敗しても手元のデータでフォールバック */ }
+    if(state.players.some(p=>p.jan===jan)){
+      toast('同じじゃんネームが既に登録されています');
+      return;
+    }
     state.players.push({id: 'p'+Date.now()+Math.floor(Math.random()*1000), jan, real, excluded: excl, boy: boy});
     await setStore('players', state.players);
     toast('追加しました');
@@ -961,12 +978,21 @@ function renderImportTab(){
     // trim trailing empty rows
     while(jans.length && jans[jans.length-1]==='') jans.pop();
     if(jans.length===0){ toast('じゃんネームを貼り付けてください'); return; }
+    pBtn.disabled = true;
+    pBtn.textContent = '最新の選手一覧を確認中…';
+    // 他の端末・タブでの変更を取りこぼさないよう、重複チェックの直前に必ず最新の選手一覧を取得し直す
+    try{
+      const fresh = await getStoreRetry('players', state.players);
+      state.players = fresh.value;
+    }catch(e){ /* 取得に失敗しても手元のデータでフォールバック */ }
+    pBtn.disabled = false;
+    pBtn.textContent = '選手を取り込む';
     const existingJans = new Set(state.players.map(p=>p.jan));
     let added=0, skipped=0;
     jans.forEach((jan, i)=>{
       if(!jan) return;
       if(existingJans.has(jan)){ skipped++; return; }
-      state.players.push({id:'p'+Date.now()+Math.floor(Math.random()*10000), jan, real: reals[i]||'', excluded:false});
+      state.players.push({id:'p'+Date.now()+Math.floor(Math.random()*10000), jan, real: reals[i]||'', excluded:false, boy:false});
       existingJans.add(jan);
       added++;
     });
