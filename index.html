@@ -786,7 +786,7 @@ function renderPlayersTab(){
   filterRow.append(filterAll, filterBoys);
   listCard.appendChild(filterRow);
   const searchInp = document.createElement('input');
-  searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネームで検索';
+  searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネーム・お名前で検索'; searchInp.lang = 'ja'; searchInp.setAttribute('inputmode','search');
   searchInp.style.width = '100%'; searchInp.style.marginBottom = '10px';
   listCard.appendChild(searchInp);
   const itemsWrap = document.createElement('div');
@@ -794,7 +794,7 @@ function renderPlayersTab(){
   function applyFilter(){
     const q = searchInp.value.trim();
     itemsWrap.querySelectorAll('.player-item').forEach(elItem=>{
-      const matchesSearch = elItem.dataset.jan.includes(q);
+      const matchesSearch = q==='' || elItem.dataset.jan.includes(q) || (elItem.dataset.real||'').includes(q);
       const matchesFilter = currentFilter==='all' || (currentFilter==='boy' && elItem.dataset.boy==='1');
       elItem.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
     });
@@ -805,10 +805,49 @@ function renderPlayersTab(){
   } else {
     state.players.forEach(p=>{
       const item = el('div','player-item');
+      item.style.flexWrap = 'wrap';
       const isDup = janCounts[p.jan]>1;
-      item.innerHTML = `
-        <div class="nm"><span class="jan">${escapeHtml(p.jan)}</span>${p.excluded?'<span class="tag-excl">対象外</span>':''}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}${isDup?'<span class="tag-excl" style="background:#F8D3C4;color:#B3401E;">重複</span>':''}<div class="real">${escapeHtml(p.real||'')}</div></div>
-      `;
+      const nmWrap = el('div','nm');
+      nmWrap.innerHTML = `<span class="jan">${escapeHtml(p.jan)}</span>${p.excluded?'<span class="tag-excl">対象外</span>':''}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}${isDup?'<span class="tag-excl" style="background:#F8D3C4;color:#B3401E;">重複</span>':''}<div class="real">${escapeHtml(p.real||'')}</div>`;
+      item.appendChild(nmWrap);
+
+      const editBtn = el('button','btn ghost','編集');
+      editBtn.style.padding = '5px 10px';
+      editBtn.style.fontSize = '11px';
+      editBtn.onclick = ()=>{
+        if(item.querySelector('.edit-form')) return; // 既に編集中
+        const form = document.createElement('div');
+        form.className = 'edit-form';
+        form.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:8px;';
+        const janInp = document.createElement('input');
+        janInp.type='text'; janInp.value = p.jan; janInp.placeholder='じゃんネーム'; janInp.style.flex='1'; janInp.style.minWidth='100px';
+        const realInp = document.createElement('input');
+        realInp.type='text'; realInp.value = p.real||''; realInp.placeholder='氏名（任意）'; realInp.style.flex='1'; realInp.style.minWidth='100px';
+        const saveEditBtn = el('button','btn','保存');
+        saveEditBtn.style.fontSize='11px'; saveEditBtn.style.padding='7px 12px';
+        const cancelEditBtn = el('button','btn ghost','キャンセル');
+        cancelEditBtn.style.fontSize='11px'; cancelEditBtn.style.padding='7px 12px';
+        saveEditBtn.onclick = ()=> runExclusive(async ()=>{
+          const newJan = janInp.value.trim();
+          const newReal = realInp.value.trim();
+          if(!newJan){ toast('じゃんネームを入力してください'); return; }
+          try{
+            const fresh = await getStoreRetry('players', state.players);
+            state.players = fresh.value;
+          }catch(e){ /* フォールバック */ }
+          const target = state.players.find(x=>x.id===p.id);
+          if(target){ target.jan = newJan; target.real = newReal; }
+          await setStore('players', state.players);
+          toast('更新しました');
+          render();
+        });
+        cancelEditBtn.onclick = ()=>{ form.remove(); };
+        form.append(janInp, realInp, saveEditBtn, cancelEditBtn);
+        item.appendChild(form);
+        janInp.focus();
+      };
+      item.appendChild(editBtn);
+
       const boyBtn = el('button', 'btn' + (p.boy ? '' : ' ghost'), p.boy ? 'BOYS解除' : 'BOYSにする');
       boyBtn.style.padding = '5px 10px';
       boyBtn.style.fontSize = '11px';
@@ -855,6 +894,7 @@ function renderPlayersTab(){
       };
       item.appendChild(delBtn);
       item.dataset.jan = p.jan;
+      item.dataset.real = p.real || '';
       item.dataset.boy = p.boy ? '1' : '0';
       itemsWrap.appendChild(item);
     });
@@ -906,7 +946,7 @@ function renderEntryTab(){
     entryCard.appendChild(el('div',null,'<p style="font-size:12.5px;color:var(--ink-soft);">先に「選手管理」タブで選手を登録してください</p>'));
   } else {
     const searchInp = document.createElement('input');
-    searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネームで検索';
+    searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネーム・お名前で検索'; searchInp.lang = 'ja'; searchInp.setAttribute('inputmode','search');
     searchInp.style.width = '100%'; searchInp.style.marginBottom = '10px';
     entryCard.appendChild(searchInp);
 
@@ -929,6 +969,7 @@ function renderEntryTab(){
         const row = document.createElement('div');
         row.className = 'entry-name-row';
         row.dataset.jan = p.jan;
+        row.dataset.real = p.real || '';
         row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 6px;border-bottom:1px solid var(--line);cursor:pointer;';
         row.innerHTML = `
           <div style="display:flex;align-items:center;gap:6px;min-width:0;">
@@ -952,7 +993,7 @@ function renderEntryTab(){
     searchInp.addEventListener('input', ()=>{
       const q = searchInp.value.trim();
       listWrap.querySelectorAll('.entry-name-row').forEach(elRow=>{
-        elRow.style.display = elRow.dataset.jan.includes(q) ? '' : 'none';
+        elRow.style.display = (q==='' || elRow.dataset.jan.includes(q) || (elRow.dataset.real||'').includes(q)) ? '' : 'none';
       });
     });
   }
