@@ -1410,6 +1410,87 @@ function renderSettingsTab(){
   backupCard.appendChild(importBtn);
   frag.appendChild(backupCard);
 
+  // ---- 重複データの整理 ----
+  const dupCard = el('div','card');
+  dupCard.innerHTML = `<h3>重複データの整理</h3>
+    <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-bottom:10px;">
+    同じ「じゃんネーム」の選手が誤って複数登録されてしまった場合、成績が分散して正しく反映されません。<br>
+    ここでチェック・統合ができます。<b>統合すると元に戻せない</b>ので、実行前に上の「バックアップを書き出す」で控えを取っておくことを強くおすすめします。
+    </p>`;
+  const checkDupBtn = el('button','btn ghost','重複をチェックする');
+  const dupResultWrap = document.createElement('div');
+  dupResultWrap.style.marginTop = '12px';
+  let lastDupGroups = null;
+  checkDupBtn.onclick = async ()=>{
+    checkDupBtn.disabled = true;
+    checkDupBtn.textContent = '確認中…';
+    try{
+      const r = await gasFetchGet('previewDuplicates');
+      lastDupGroups = r.groups || [];
+      dupResultWrap.innerHTML = '';
+      if(lastDupGroups.length===0){
+        dupResultWrap.innerHTML = '<p style="font-size:12.5px;color:#2C6B3F;">重複は見つかりませんでした 🐰</p>';
+        mergeDupBtn.style.display = 'none';
+      } else {
+        const summary = el('div');
+        summary.style.cssText = 'font-size:12.5px;color:#B3401E;font-weight:700;margin-bottom:8px;';
+        summary.textContent = `${lastDupGroups.length}件の重複が見つかりました`;
+        dupResultWrap.appendChild(summary);
+        lastDupGroups.forEach(g=>{
+          const line = document.createElement('div');
+          line.style.cssText = 'font-size:11.5px;color:var(--ink);padding:6px 0;border-bottom:1px solid var(--line);';
+          line.innerHTML = `<b>${escapeHtml(g.jan)}</b>：${g.players.map(p=>`${p.games}戦`).join(' / ')}（一番対局数が多い記録を残して統合します）`;
+          dupResultWrap.appendChild(line);
+        });
+        mergeDupBtn.style.display = 'inline-block';
+      }
+    }catch(e){
+      dupResultWrap.innerHTML = '<p style="font-size:12.5px;color:#B3401E;">チェックに失敗しました。もう一度お試しください</p>';
+    }
+    checkDupBtn.disabled = false;
+    checkDupBtn.textContent = '重複をチェックする';
+  };
+  dupCard.appendChild(checkDupBtn);
+  dupCard.appendChild(dupResultWrap);
+
+  const mergeDupBtn = el('button','btn danger','この内容で統合を実行する（元に戻せません）');
+  mergeDupBtn.style.marginTop = '12px';
+  mergeDupBtn.style.display = 'none';
+  let mergeConfirming = false;
+  let mergeResetTimer = null;
+  mergeDupBtn.onclick = async ()=>{
+    if(!mergeConfirming){
+      mergeConfirming = true;
+      mergeDupBtn.textContent = 'もう一度押すと統合を実行します';
+      mergeResetTimer = setTimeout(()=>{
+        mergeConfirming = false;
+        mergeDupBtn.textContent = 'この内容で統合を実行する（元に戻せません）';
+      }, 4000);
+      return;
+    }
+    clearTimeout(mergeResetTimer);
+    mergeDupBtn.disabled = true;
+    mergeDupBtn.textContent = '統合中…';
+    try{
+      const res = await gasFetchPost('mergeDuplicates', {});
+      toast(`統合しました（${res.result.mergedGroups}件のグループ、${res.result.removedPlayers}名を統合）`);
+      dupResultWrap.innerHTML = '<p style="font-size:12.5px;color:#2C6B3F;">統合が完了しました 🐰</p>';
+      mergeDupBtn.style.display = 'none';
+      // 選手一覧などを最新化
+      const playersResult = await getStoreRetry('players', []);
+      state.players = playersResult.value;
+      state.monthsData = {};
+      await loadRecords(state.currentMonth);
+    }catch(e){
+      toast('統合に失敗しました。もう一度お試しください');
+      mergeDupBtn.textContent = 'この内容で統合を実行する（元に戻せません）';
+    }
+    mergeConfirming = false;
+    mergeDupBtn.disabled = false;
+  };
+  dupCard.appendChild(mergeDupBtn);
+  frag.appendChild(dupCard);
+
   return frag;
 }
 
