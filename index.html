@@ -504,15 +504,19 @@ function renderPublic(){
     return frag;
   }
 
-  // podium (top3)
+  // podium (top3)：BOYSは表彰台(TOP3)には出さない。ポイントには反映されるので下のリストには通常通り登場する
+  const podiumPlayers = ranked.filter(p=>!p.boy).slice(0,3);
+  const podiumIds = new Set(podiumPlayers.map(p=>p.id));
+  const restPlayers = ranked.filter(p=>!podiumIds.has(p.id));
+
   frag.appendChild(el('div','ranking-title',`<span class="em">🏆</span> ${state.labelMode}ポイントランキング`));
-  if(ranked.length >= 1){
+  if(podiumPlayers.length >= 1){
     const podium = el('div','podium');
-    const slots = [ranked[1], ranked[0], ranked[2]];
+    const slots = [podiumPlayers[1], podiumPlayers[0], podiumPlayers[2]];
     const classes = ['p2','p1','p3'];
     slots.forEach((p, i)=>{
       if(!p){ podium.appendChild(el('div','podium-card '+classes[i])); return; }
-      const rankNum = ranked.indexOf(p)+1;
+      const rankNum = podiumPlayers.indexOf(p)+1;
       const card = el('div','podium-card '+classes[i]);
       card.style.cursor = 'pointer';
       card.innerHTML = `
@@ -526,16 +530,16 @@ function renderPublic(){
     frag.appendChild(podium);
   }
 
-  // rest list (4th onward)
+  // rest list (4th onward)：TOP3に入らなかった人＋BOYSがポイント順に並ぶ
   const list = el('div','list');
-  ranked.slice(3).forEach((p,idx)=>{
+  restPlayers.forEach((p,idx)=>{
     const rank = idx+4;
     const row = el('div','row');
     row.style.cursor = 'pointer';
     row.innerHTML = `
       <div class="rank-tile">${rank}</div>
       <div class="row-name">
-        <div class="jan">${escapeHtml(p.jan)}</div>
+        <div class="jan">${escapeHtml(p.jan)}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}</div>
         <div class="sub">${p.games>0 ? `${p.games}戦・平均${p.avgRank.toFixed(2)}位・トップ率${p.topRate.toFixed(1)}%` : '未対局'}</div>
       </div>
       <div class="row-stats">
@@ -680,15 +684,19 @@ function renderPlayersTab(){
   `;
   addCard.appendChild(row);
   const row2 = el('div','field-row');
-  row2.innerHTML = `<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);"><input type="checkbox" id="newExcl">ランキング対象外（BOYS・店長など）</label>`;
+  row2.innerHTML = `<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);"><input type="checkbox" id="newExcl">ランキング対象外（店長など、成績自体を集計しない）</label>`;
   addCard.appendChild(row2);
+  const row3 = el('div','field-row');
+  row3.innerHTML = `<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);"><input type="checkbox" id="newBoy">BOYS（ポイントは集計するが、TOP3の表彰台には出さない）</label>`;
+  addCard.appendChild(row3);
   const addBtn = el('button','btn','追加する');
   addBtn.onclick = async ()=>{
     const jan = document.getElementById('newJan').value.trim();
     const real = document.getElementById('newReal').value.trim();
     const excl = document.getElementById('newExcl').checked;
+    const boy = document.getElementById('newBoy').checked;
     if(!jan){ toast('じゃんネームを入力してください'); return; }
-    state.players.push({id: 'p'+Date.now()+Math.floor(Math.random()*1000), jan, real, excluded: excl});
+    state.players.push({id: 'p'+Date.now()+Math.floor(Math.random()*1000), jan, real, excluded: excl, boy: boy});
     await setStore('players', state.players);
     toast('追加しました');
     render();
@@ -704,12 +712,38 @@ function renderPlayersTab(){
 
   const listCard = el('div','card');
   listCard.innerHTML = `<h3>選手一覧（${state.players.length}名）</h3>`;
+  const filterRow = el('div','field-row');
+  filterRow.style.marginBottom = '8px';
+  const filterAll = document.createElement('button');
+  filterAll.textContent = 'すべて';
+  const filterBoys = document.createElement('button');
+  filterBoys.textContent = `BOYSのみ（${state.players.filter(p=>p.boy).length}名）`;
+  let currentFilter = 'all';
+  function updateFilterBtnStyle(){
+    filterAll.className = 'btn' + (currentFilter==='all' ? '' : ' ghost');
+    filterBoys.className = 'btn' + (currentFilter==='boy' ? '' : ' ghost');
+    filterAll.style.fontSize = filterBoys.style.fontSize = '12px';
+    filterAll.style.padding = filterBoys.style.padding = '7px 12px';
+  }
+  updateFilterBtnStyle();
+  filterAll.onclick = ()=>{ currentFilter='all'; updateFilterBtnStyle(); applyFilter(); };
+  filterBoys.onclick = ()=>{ currentFilter='boy'; updateFilterBtnStyle(); applyFilter(); };
+  filterRow.append(filterAll, filterBoys);
+  listCard.appendChild(filterRow);
   const searchInp = document.createElement('input');
   searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネームで検索';
   searchInp.style.width = '100%'; searchInp.style.marginBottom = '10px';
   listCard.appendChild(searchInp);
   const itemsWrap = document.createElement('div');
   listCard.appendChild(itemsWrap);
+  function applyFilter(){
+    const q = searchInp.value.trim();
+    itemsWrap.querySelectorAll('.player-item').forEach(elItem=>{
+      const matchesSearch = elItem.dataset.jan.includes(q);
+      const matchesFilter = currentFilter==='all' || (currentFilter==='boy' && elItem.dataset.boy==='1');
+      elItem.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+    });
+  }
 
   if(state.players.length===0){
     itemsWrap.appendChild(el('div', null, '<p style="font-size:12.5px;color:var(--ink-soft);">まだ選手が登録されていません</p>'));
@@ -718,8 +752,18 @@ function renderPlayersTab(){
       const item = el('div','player-item');
       const isDup = janCounts[p.jan]>1;
       item.innerHTML = `
-        <div class="nm"><span class="jan">${escapeHtml(p.jan)}</span>${p.excluded?'<span class="tag-excl">対象外</span>':''}${isDup?'<span class="tag-excl" style="background:#F8D3C4;color:#B3401E;">重複</span>':''}<div class="real">${escapeHtml(p.real||'')}</div></div>
+        <div class="nm"><span class="jan">${escapeHtml(p.jan)}</span>${p.excluded?'<span class="tag-excl">対象外</span>':''}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}${isDup?'<span class="tag-excl" style="background:#F8D3C4;color:#B3401E;">重複</span>':''}<div class="real">${escapeHtml(p.real||'')}</div></div>
       `;
+      const boyBtn = el('button', 'btn' + (p.boy ? '' : ' ghost'), p.boy ? 'BOYS解除' : 'BOYSにする');
+      boyBtn.style.padding = '5px 10px';
+      boyBtn.style.fontSize = '11px';
+      boyBtn.onclick = async ()=>{
+        p.boy = !p.boy;
+        await setStore('players', state.players);
+        toast(p.boy ? 'BOYSに設定しました' : 'BOYSを解除しました');
+        render();
+      };
+      item.appendChild(boyBtn);
       const delBtn = el('button','btn danger','削除');
       delBtn.style.padding = '5px 10px';
       delBtn.style.fontSize = '11px';
@@ -744,15 +788,11 @@ function renderPlayersTab(){
       };
       item.appendChild(delBtn);
       item.dataset.jan = p.jan;
+      item.dataset.boy = p.boy ? '1' : '0';
       itemsWrap.appendChild(item);
     });
   }
-  searchInp.addEventListener('input', ()=>{
-    const q = searchInp.value.trim();
-    itemsWrap.querySelectorAll('.player-item').forEach(el=>{
-      el.style.display = el.dataset.jan.includes(q) ? '' : 'none';
-    });
-  });
+  searchInp.addEventListener('input', applyFilter);
   frag.appendChild(listCard);
   return frag;
 }
