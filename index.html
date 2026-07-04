@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ラビ王ランキング</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8FB;
+    --felt:#E6187E;
+    --felt-dark:#AD1263;
+    --pink:#FF8AC0;
+    --pink-soft:#FDE6F1;
+    --gold:#E8B94A;
+    --plum:#5A5A5A;
+    --ink:#4A4A4A;
+    --ink-soft:#9B9B9B;
+    --white:#FFFFFF;
+    --line:#F6D8E7;
+    --radius:18px;
+    --shadow: 0 6px 20px rgba(230,24,126,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans JP', sans-serif;
+    background:
+      radial-gradient(circle at 10% 0%, var(--pink-soft) 0%, transparent 45%),
+      var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:520px;margin:0 auto;padding:20px 16px 60px;}
+  .logo-wrap{display:flex;justify-content:center;margin-bottom:2px;}
+  .logo-wrap img{width:74px;height:auto;filter:drop-shadow(0 4px 10px rgba(230,24,126,0.18));}
+  .brand{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'M PLUS Rounded 1c',sans-serif;
+    font-weight:800;
+    font-size:24px;
+    color:var(--felt-dark);
+    letter-spacing:.02em;
+    text-align:center;
+  }
+  .brand .ear{font-size:20px;}
+  .month-badge{
+    text-align:center;color:var(--plum);font-weight:700;font-size:14px;margin-top:2px;
+  }
+  .tagline{
+    text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.6;
+  }
+  select.month-picker{
+    display:block;margin:14px auto 0;
+    font-family:'Noto Sans JP',sans-serif;
+    font-weight:700;font-size:14px;color:var(--felt-dark);
+    background:var(--white);border:1.5px solid var(--felt);border-radius:999px;
+    padding:8px 30px 8px 16px;
+    -webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233E7A5C'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:16px;
+  }
+  .rules{
+    margin-top:18px;background:var(--white);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px 16px;display:flex;justify-content:space-around;
+    border:1px solid var(--line);
+  }
+  .rules div{text-align:center;font-size:12px;color:var(--ink-soft);}
+  .rules b{display:block;font-size:15px;color:var(--felt-dark);font-family:'M PLUS Rounded 1c',sans-serif;}
+
+  .mankin-card{
+    margin-top:16px;background:linear-gradient(135deg,#FFF3E0,#FDE6F1);
+    border:2px solid var(--gold);border-radius:var(--radius);
+    padding:14px 18px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);
+  }
+  .mankin-icon{font-size:30px;flex:none;}
+  .mankin-label{font-size:11px;color:#B3810F;font-weight:700;}
+  .mankin-name{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:17px;color:var(--felt-dark);margin-top:1px;}
+  .mankin-count{margin-left:auto;text-align:center;flex:none;}
+  .mankin-count .n{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:20px;color:#B3810F;}
+  .mankin-count .l{font-size:10px;color:#B3810F;}
+
+  .ranking-title{
+    display:flex;align-items:center;gap:6px;margin-top:22px;margin-bottom:2px;
+    font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:15px;color:var(--felt-dark);
+  }
+  .ranking-title .em{font-size:17px;}
+
+  /* Podium */
+  .podium{display:flex;align-items:flex-end;gap:8px;margin-top:12px;}
+  .podium-card{
+    flex:1;background:var(--white);border-radius:16px 16px 10px 10px;
+    box-shadow:0 8px 22px rgba(230,24,126,0.14);text-align:center;padding:14px 8px 10px;
+    border:2px solid var(--line); position:relative;
+  }
+  .podium-card.p1{order:2;padding-top:26px;transform:translateY(-10px);border:3px solid var(--gold);box-shadow:0 10px 26px rgba(232,185,74,0.35);}
+  .podium-card.p2{order:1;border-color:#C9CFD6;}
+  .podium-card.p3{order:3;border-color:#DDB48C;}
+  .p-medal{
+    width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 6px;color:#fff;font-weight:800;font-family:'M PLUS Rounded 1c',sans-serif;font-size:15px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  }
+  .p1 .p-medal{background:linear-gradient(160deg,#F5CD6B,#DDA82F);width:44px;height:44px;font-size:19px;}
+  .p2 .p-medal{background:linear-gradient(160deg,#D9DEE3,#AEB6BE);}
+  .p3 .p-medal{background:linear-gradient(160deg,#E3B48C,#C58A5B);}
+  .p-name{font-weight:800;font-size:14px;margin-bottom:2px;word-break:break-all;}
+  .p-pts{color:var(--felt-dark);font-weight:800;font-size:20px;font-family:'M PLUS Rounded 1c',sans-serif;}
+  .p-pts span{font-size:10px;color:var(--ink-soft);font-weight:500;margin-left:2px;}
+
+  /* List */
+  .list{margin-top:18px;display:flex;flex-direction:column;gap:9px;}
+  .row{
+    background:var(--white);border-radius:14px;box-shadow:0 4px 14px rgba(230,24,126,0.08);
+    padding:12px 16px;display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);
+  }
+  .rank-tile{
+    width:34px;height:34px;flex:none;border-radius:9px;background:var(--felt);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:15px;
+    box-shadow:0 3px 8px rgba(230,24,126,0.3);
+  }
+  .row-name{flex:1;min-width:0;}
+  .row-name .jan{font-weight:800;font-size:15.5px;}
+  .row-name .sub{font-size:11px;color:var(--ink-soft);margin-top:1px;}
+  .row-stats{text-align:right;flex:none;}
+  .row-stats .pts{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;color:var(--felt-dark);font-size:18px;}
+  .row-stats .sub{font-size:10.5px;color:var(--ink-soft);}
+
+  .empty{
+    text-align:center;color:var(--ink-soft);font-size:13px;background:var(--white);
+    border-radius:var(--radius);padding:34px 20px;margin-top:20px;border:1px dashed var(--line);
+  }
+
+  .footer-link{
+    text-align:center;margin-top:34px;
+  }
+  .footer-link button{
+    background:none;border:none;color:var(--ink-soft);font-size:11px;text-decoration:underline;
+    cursor:pointer;padding:6px;
+  }
+
+  /* Admin */
+  .admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .admin-header h1{font-family:'M PLUS Rounded 1c',sans-serif;font-size:19px;color:var(--felt-dark);margin:0;}
+  .back-btn{background:var(--white);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12.5px;color:var(--ink);cursor:pointer;}
+  .tabs{display:flex;gap:6px;margin-bottom:16px;}
+  .tab-btn{
+    flex:1;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--white);
+    font-weight:700;font-size:13px;color:var(--ink-soft);cursor:pointer;
+  }
+  .tab-btn.active{background:var(--felt);color:#fff;border-color:var(--felt);}
+  .card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line);padding:16px;margin-bottom:14px;}
+  .card h3{margin:0 0 10px;font-size:14px;color:var(--felt-dark);font-family:'M PLUS Rounded 1c',sans-serif;}
+  .field-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  input[type=text], input[type=date], input[type=number], input[type=password]{
+    font-family:'Noto Sans JP',sans-serif;border:1.5px solid var(--line);border-radius:9px;
+    padding:8px 10px;font-size:13.5px;background:#FDFAF7;color:var(--ink);
+  }
+  input:focus{outline:none;border-color:var(--felt);}
+  .btn{
+    font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;border:none;border-radius:10px;
+    padding:9px 16px;font-size:13.5px;cursor:pointer;color:#fff;background:var(--felt);
+  }
+  .btn.secondary{background:var(--pink);color:#5a2c40;}
+  .btn.ghost{background:transparent;color:var(--felt);border:1.5px solid var(--felt);}
+  .btn.danger{background:#D9704F;}
+  .btn:active{transform:scale(0.97);}
+  .player-item{
+    display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;
+  }
+  .player-item:last-child{border-bottom:none;}
+  .player-item .nm{flex:1;}
+  .player-item .nm .jan{font-weight:700;}
+  .player-item .nm .real{color:var(--ink-soft);font-size:11px;}
+  .tag-excl{background:#F1D9DF;color:#8B4A5E;font-size:10px;padding:2px 6px;border-radius:6px;margin-left:6px;}
+  .entry-row{padding:10px 0;border-bottom:1px solid var(--line);}
+  .entry-row:last-child{border-bottom:none;}
+  .entry-row .nm{font-size:13px;font-weight:700;margin-bottom:6px;}
+  .entry-row .inputs{display:flex;gap:8px;flex-wrap:wrap;}
+  .entry-row .inputs label{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--ink-soft);}
+  .entry-row .inputs input[type=number]{width:52px;text-align:center;padding:6px 2px;font-size:14px;}
+  .pin-overlay{
+    position:fixed;inset:0;background:rgba(58,53,48,0.55);display:flex;align-items:center;justify-content:center;
+    padding:20px;z-index:50;
+  }
+  .pin-box{background:var(--white);border-radius:18px;padding:26px 22px;max-width:300px;width:100%;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,0.25);}
+  .pin-box h3{margin:0 0 4px;font-family:'M PLUS Rounded 1c',sans-serif;color:var(--felt-dark);}
+  .pin-box p{font-size:12px;color:var(--ink-soft);margin:0 0 14px;}
+  .pin-box input{width:100%;text-align:center;letter-spacing:6px;font-size:18px;margin-bottom:10px;}
+  .hint{font-size:11px;color:var(--ink-soft);margin-top:8px;}
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--felt-dark);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;
+    box-shadow:0 6px 16px rgba(0,0,0,0.2);z-index:60;opacity:0;transition:opacity .25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+  .muted-btn{background:none;border:none;color:var(--felt);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;}
+
+  /* Player detail modal */
+  .detail-overlay{
+    position:fixed;inset:0;background:rgba(58,53,48,0.55);display:flex;align-items:flex-end;justify-content:center;
+    z-index:55;
+  }
+  .detail-sheet{
+    background:var(--cream);border-radius:22px 22px 0 0;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;
+    padding:18px 18px 30px;box-shadow:0 -8px 30px rgba(0,0,0,0.25);
+  }
+  .detail-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .detail-head h2{font-family:'M PLUS Rounded 1c',sans-serif;font-size:19px;color:var(--felt-dark);margin:0;}
+  .detail-close{background:var(--white);border:1px solid var(--line);border-radius:50%;width:30px;height:30px;font-size:16px;color:var(--ink-soft);cursor:pointer;}
+  .detail-sub{font-size:11.5px;color:var(--ink-soft);margin-bottom:14px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+  .stat-box{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center;}
+  .stat-box .v{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:16px;color:var(--felt-dark);}
+  .stat-box .l{font-size:10px;color:var(--ink-soft);margin-top:2px;}
+  .chart-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:14px 10px;margin-bottom:16px;}
+  .chart-card h4{margin:0 0 8px 4px;font-size:12.5px;color:var(--felt-dark);font-family:'M PLUS Rounded 1c',sans-serif;}
+  .pie-wrap{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:6px 4px 4px;}
+  .pie-legend{display:flex;flex-direction:column;gap:8px;}
+  .pie-legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);}
+  .pie-dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 1px 3px rgba(0,0,0,0.15);}
+  .pie-legend-item b{font-family:'M PLUS Rounded 1c',sans-serif;color:var(--felt-dark);}
+  .pie-legend-item .pct{color:var(--ink-soft);font-size:11px;}
+  .day-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  .day-table th{color:var(--ink-soft);font-weight:600;padding:5px 4px;border-bottom:1px solid var(--line);text-align:center;}
+  .day-table td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--line);}
+  .day-table td:first-child, .day-table th:first-child{text-align:left;}
+</style>
+</head>
+<body>
+<div id="root" class="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+const root = document.getElementById('root');
+const LOGO_SRC = 'data:image/png;base64,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';
+const toastEl = document.getElementById('toast');
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 1800);
+}
+
+// ▼▼▼ GAS(Google Apps Script)のデプロイ後、ここに実際の値を貼り付けてください ▼▼▼
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbztrm6f5EyVF_BeX-TfWlNBytpHcABgDrtOBCv0xahaPgYvhWO-XbjVNU3UlrdNLIVwHg/exec';
+const GAS_TOKEN = 'dorapan_point_2026_aono3103';
+// ▲▲▲ GAS(Google Apps Script)のデプロイ後、ここに実際の値を貼り付けてください ▲▲▲
+
+async function gasFetchGet(action, params={}){
+  const qs = new URLSearchParams({action, ...params}).toString();
+  const res = await fetch(`${GAS_URL}?${qs}`);
+  const data = await res.json();
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+async function gasFetchPost(action, data={}){
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'}, // text/plainにするとブラウザのCORSプリフライトを回避できる
+    body: JSON.stringify({action, token: GAS_TOKEN, ...data}),
+  });
+  const json = await res.json();
+  if(json && json.error) throw new Error(json.error);
+  return json;
+}
+
+async function getStore(key, def, shared=true){
+  try{
+    if(key === 'players'){
+      const r = await gasFetchGet('getAll');
+      return r.players !== undefined ? r.players : def;
+    }
+    if(key === 'settings'){
+      const r = await gasFetchGet('getAll');
+      return r.settings !== undefined ? r.settings : def;
+    }
+    if(key.startsWith('records_')){
+      const mk = key.replace('records_','');
+      const r = await gasFetchGet('getRecords', {month: mk});
+      return r.records !== undefined ? r.records : def;
+    }
+    return def;
+  }catch(e){ return def; }
+}
+async function setStore(key, value, shared=true){
+  try{
+    if(key === 'players'){
+      await gasFetchPost('setPlayers', {data: value});
+      return true;
+    }
+    if(key === 'settings'){
+      await gasFetchPost('setSettings', {data: value});
+      return true;
+    }
+    if(key.startsWith('records_')){
+      const mk = key.replace('records_','');
+      await gasFetchPost('setRecords', {month: mk, data: value});
+      return true;
+    }
+    return false;
+  }
+  catch(e){ console.error('storage error', e); toast('保存に失敗しました。もう一度お試しください'); return false; }
+}
+
+let state = {
+  players: [],       // {id, jan, real, excluded}
+  monthsData: {},     // cache: monthKey -> records object
+  currentMonth: null,
+  view: 'public',      // public | admin
+  adminTab: 'players',   // players | entry
+  unlocked: false,
+  pin: null,
+  entryDate: todayStr(),
+  loadWarning: false,
+  knownMonths: [],
+  labelMode: '現在の',
+};
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function monthKeyOf(dateStr){ return dateStr.slice(0,7); }
+function addDays(dateStr, n){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m-1, d));
+  dt.setUTCDate(dt.getUTCDate()+n);
+  return dt.toISOString().slice(0,10);
+}
+function monthLabel(mk){
+  const [y,m] = mk.split('-');
+  return `${y}年${parseInt(m)}月`;
+}
+function recKey(mk){ return 'records_'+mk; }
+
+async function loadRecords(mk){
+  if(state.monthsData[mk]) return state.monthsData[mk];
+  const result = await getStoreRetry(recKey(mk), {});
+  state.monthsData[mk] = result.value;
+  if(!state.recordsLoadWarning) state.recordsLoadWarning = {};
+  state.recordsLoadWarning[mk] = result.failed && Object.keys(result.value).length===0;
+  return state.monthsData[mk];
+}
+
+function calcStats(playerId, records){
+  const days = records[playerId] || {};
+  let first=0, second=0, third=0, tobi=0, yakuman=0;
+  Object.values(days).forEach(d=>{
+    first += d.first||0; second += d.second||0; third += d.third||0;
+    tobi += d.tobi||0; yakuman += d.yakuman||0;
+  });
+  const games = first+second+third;
+  const points = first*3 + second*1 - third*1 + tobi*1;
+  const avgRank = games>0 ? ((first*1+second*2+third*3)/games) : null;
+  const topRate = games>0 ? (first/games*100) : null;
+  const rentaiRate = games>0 ? ((first+second)/games*100) : null;
+  const lastAvoidRate = games>0 ? ((games-third)/games*100) : null;
+  const tobiRate = games>0 ? (tobi/games*100) : null;
+  return {games, first, second, third, tobi, yakuman, points, avgRank, topRate, rentaiRate, lastAvoidRate, tobiRate};
+}
+
+async function getStoreRetry(key, def, shared=true, attempts=3){
+  for(let i=0;i<attempts;i++){
+    try{
+      let value;
+      if(key === 'players'){
+        const r = await gasFetchGet('getAll'); value = r.players;
+      } else if(key === 'settings'){
+        const r = await gasFetchGet('getAll'); value = r.settings;
+      } else if(key.startsWith('records_')){
+        const mk = key.replace('records_','');
+        const r = await gasFetchGet('getRecords', {month: mk}); value = r.records;
+      }
+      if(value === undefined) throw new Error('empty response');
+      return { value: value, failed: false };
+    }catch(e){
+      // ネットワーク不調などで失敗した場合はリトライ。最終失敗は「データ無し」と区別するためfailedを返す
+      if(i < attempts-1) await new Promise(res=>setTimeout(res, 400));
+    }
+  }
+  return { value: def, failed: true };
+}
+
+async function refreshKnownMonths(){
+  try{
+    const r = await gasFetchGet('listMonths');
+    state.knownMonths = r.months || [];
+  }catch(e){
+    state.knownMonths = state.knownMonths || [];
+  }
+}
+
+async function init(){
+  const playersResult = await getStoreRetry('players', []);
+  state.players = playersResult.value;
+  state.loadWarning = playersResult.failed && state.players.length===0;
+  const settings = await getStore('settings', {pin:'0403', labelMode:'現在の'});
+  state.pin = settings.pin;
+  state.labelMode = settings.labelMode || '現在の';
+  state.currentMonth = monthKeyOf(todayStr());
+  await loadRecords(state.currentMonth);
+  await refreshKnownMonths();
+  render();
+}
+
+function retryInit(){
+  root.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--ink-soft);font-size:13px;">読み込み中...</div>';
+  state.monthsData = {};
+  state.recordsLoadWarning = {};
+  state.loadWarning = false;
+  init();
+}
+
+/* ---------- RENDER ---------- */
+function render(){
+  root.innerHTML = '';
+  if(state.view === 'public'){
+    root.appendChild(renderPublic());
+  } else {
+    root.appendChild(renderAdmin());
+  }
+}
+
+function el(tag, cls, html){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+function renderPublic(){
+  const frag = document.createDocumentFragment();
+
+  const header = el('div');
+  header.innerHTML = `
+    <div class="logo-wrap"><img src="${LOGO_SRC}" alt="ドラパン"></div>
+    <div class="brand">ラビ王ランキング</div>
+    <div class="month-badge" id="monthLabel"></div>
+    <div class="tagline">ポイント数でラビ王目指して<br>Let's ふんわり 💕</div>
+  `;
+  frag.appendChild(header);
+
+  // month picker
+  const availableMonths = getAvailableMonths();
+  const picker = el('select', 'month-picker');
+  availableMonths.forEach(mk=>{
+    const opt = el('option'); opt.value = mk; opt.textContent = monthLabel(mk);
+    if(mk === state.currentMonth) opt.selected = true;
+    picker.appendChild(opt);
+  });
+  picker.onchange = async (e)=>{
+    state.currentMonth = e.target.value;
+    await loadRecords(state.currentMonth);
+    render();
+  };
+  frag.appendChild(picker);
+
+  const rules = el('div','rules',`
+    <div><b>1着 +3P</b>トップ</div>
+    <div><b>2着 +1P</b>2着</div>
+    <div><b>3着 −1P</b>3着</div>
+    <div><b>トビ +1P</b>飛び賞</div>
+  `);
+  frag.appendChild(rules);
+
+  const records = state.monthsData[state.currentMonth] || {};
+  const ranked = state.players
+    .filter(p=>!p.excluded)
+    .map(p=>({...p, ...calcStats(p.id, records)}))
+    .filter(p=>p.games > 0)
+    .sort((a,b)=> b.points - a.points || b.games - a.games);
+
+  const maxYakuman = Math.max(0, ...ranked.map(p=>p.yakuman));
+  if(maxYakuman > 0){
+    const mankinPlayers = ranked.filter(p=>p.yakuman===maxYakuman);
+    const mankin = el('div','mankin-card');
+    mankin.innerHTML = `
+      <div class="mankin-icon">👑</div>
+      <div>
+        <div class="mankin-label">${state.labelMode} まんキン</div>
+        <div class="mankin-name">${mankinPlayers.map(p=>escapeHtml(p.jan)).join('・')}</div>
+      </div>
+      <div class="mankin-count"><div class="n">${maxYakuman}</div><div class="l">役満</div></div>
+    `;
+    frag.appendChild(mankin);
+  }
+
+  document.title = 'ラビ王ランキング';
+  setTimeout(()=>{ const ml = document.getElementById('monthLabel'); if(ml) ml.textContent = monthLabel(state.currentMonth); },0);
+
+  if(ranked.length === 0){
+    frag.appendChild(el('div','empty','まだ今月の成績がありません 🐰<br>成績が入力されるとここにランキングが表示されます'));
+    frag.appendChild(footerLink());
+    return frag;
+  }
+
+  // podium (top3)
+  frag.appendChild(el('div','ranking-title',`<span class="em">🏆</span> ${state.labelMode}ポイントランキング`));
+  if(ranked.length >= 1){
+    const podium = el('div','podium');
+    const slots = [ranked[1], ranked[0], ranked[2]];
+    const classes = ['p2','p1','p3'];
+    slots.forEach((p, i)=>{
+      if(!p){ podium.appendChild(el('div','podium-card '+classes[i])); return; }
+      const rankNum = ranked.indexOf(p)+1;
+      const card = el('div','podium-card '+classes[i]);
+      card.style.cursor = 'pointer';
+      card.innerHTML = `
+        <div class="p-medal">${rankNum}</div>
+        <div class="p-name">${escapeHtml(p.jan)}</div>
+        <div class="p-pts">${p.points}<span>P</span></div>
+      `;
+      card.onclick = ()=> openPlayerDetail(p.id);
+      podium.appendChild(card);
+    });
+    frag.appendChild(podium);
+  }
+
+  // rest list (4th onward)
+  const list = el('div','list');
+  ranked.slice(3).forEach((p,idx)=>{
+    const rank = idx+4;
+    const row = el('div','row');
+    row.style.cursor = 'pointer';
+    row.innerHTML = `
+      <div class="rank-tile">${rank}</div>
+      <div class="row-name">
+        <div class="jan">${escapeHtml(p.jan)}</div>
+        <div class="sub">${p.games>0 ? `${p.games}戦・平均${p.avgRank.toFixed(2)}位・トップ率${p.topRate.toFixed(1)}%` : '未対局'}</div>
+      </div>
+      <div class="row-stats">
+        <div class="pts">${p.points}P</div>
+        <div class="sub">${p.games>0 ? `${p.first}-${p.second}-${p.third}-${p.tobi}` : '-'}</div>
+      </div>
+    `;
+    row.onclick = ()=> openPlayerDetail(p.id);
+    list.appendChild(row);
+  });
+  frag.appendChild(list);
+
+  frag.appendChild(footerLink());
+  return frag;
+}
+
+function footerLink(){
+  const d = el('div','footer-link');
+  const btn = el('button', null, 'スタッフ用');
+  btn.onclick = ()=>{ state.view = 'pin-check'; render(); showPinOverlay(); };
+  d.appendChild(btn);
+  return d;
+}
+
+function getAvailableMonths(){
+  const set = new Set([state.currentMonth]);
+  set.add(monthKeyOf(todayStr()));
+  Object.keys(state.monthsData).forEach(k=>set.add(k));
+  (state.knownMonths||[]).forEach(k=>set.add(k));
+  return Array.from(set).sort().reverse();
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- PIN ---------- */
+function showPinOverlay(){
+  const overlay = el('div','pin-overlay');
+  overlay.innerHTML = `
+    <div class="pin-box">
+      <h3>スタッフ用画面</h3>
+      <p>PINコードを入力してください</p>
+      <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••">
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button class="btn ghost" id="pinCancel">もどる</button>
+        <button class="btn" id="pinOk">入力</button>
+      </div>
+      <div class="hint">初期PIN: 0403（あとで変更できます）</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#pinInput');
+  input.focus();
+  overlay.querySelector('#pinCancel').onclick = ()=>{ overlay.remove(); state.view='public'; render(); };
+  overlay.querySelector('#pinOk').onclick = ()=>{
+    if(input.value === state.pin){
+      overlay.remove();
+      state.unlocked = true;
+      state.view = 'admin';
+      render();
+      window.scrollTo(0,0);
+    } else {
+      toast('PINが違います');
+    }
+  };
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') overlay.querySelector('#pinOk').click(); });
+}
+
+/* ---------- ADMIN ---------- */
+function renderAdmin(){
+  if(!state.unlocked){ state.view='public'; return renderPublic(); }
+  const frag = document.createDocumentFragment();
+
+  const header = el('div','admin-header');
+  header.innerHTML = `<h1><img src="${LOGO_SRC}" alt="ドラパン" style="width:26px;vertical-align:-6px;margin-right:6px;">スタッフ管理画面</h1>`;
+  const back = el('button','back-btn','公開画面へもどる');
+  back.onclick = ()=>{ state.view='public'; render(); window.scrollTo(0,0); };
+  header.appendChild(back);
+  frag.appendChild(header);
+
+  const tabs = el('div','tabs');
+  const tabPlayers = el('button','tab-btn'+(state.adminTab==='players'?' active':''),'選手管理');
+  const tabEntry = el('button','tab-btn'+(state.adminTab==='entry'?' active':''),'成績入力');
+  const tabImport = el('button','tab-btn'+(state.adminTab==='import'?' active':''),'取込');
+  const tabSettings = el('button','tab-btn'+(state.adminTab==='settings'?' active':''),'設定');
+  tabPlayers.onclick = ()=>{ state.adminTab='players'; render(); window.scrollTo(0,0); };
+  tabEntry.onclick = ()=>{ state.adminTab='entry'; render(); window.scrollTo(0,0); };
+  tabImport.onclick = ()=>{ state.adminTab='import'; render(); window.scrollTo(0,0); };
+  tabSettings.onclick = ()=>{ state.adminTab='settings'; render(); window.scrollTo(0,0); };
+  tabs.append(tabPlayers, tabEntry, tabImport, tabSettings);
+  frag.appendChild(tabs);
+
+  if(state.adminTab === 'players') frag.appendChild(renderPlayersTab());
+  else if(state.adminTab === 'entry') frag.appendChild(renderEntryTab());
+  else if(state.adminTab === 'import') frag.appendChild(renderImportTab());
+  else frag.appendChild(renderSettingsTab());
+
+  return frag;
+}
+
+function renderPlayersTab(){
+  const frag = document.createDocumentFragment();
+
+  if(state.loadWarning){
+    const warnLoad = el('div','card');
+    warnLoad.style.borderColor = '#E39A7E';
+    warnLoad.style.background = '#FBEFE9';
+    warnLoad.innerHTML = `<h3 style="color:#B3401E;">⚠️ データの読み込みに失敗した可能性があります</h3>
+      <div style="font-size:12px;color:#8a4a2e;line-height:1.7;margin-bottom:10px;">
+      選手一覧が0名と表示されていますが、通信の不調で正しく読み込めていないだけかもしれません。<br>
+      <b>この状態で選手を追加したり取り込んだりする前に、必ず下のボタンでもう一度読み込み直してください。</b>
+      </div>`;
+    const retryBtn = el('button','btn','もう一度読み込む');
+    retryBtn.onclick = ()=> retryInit();
+    warnLoad.appendChild(retryBtn);
+    frag.appendChild(warnLoad);
+  }
+
+  // duplicate jan name detection
+  const janCounts = {};
+  state.players.forEach(p=> janCounts[p.jan] = (janCounts[p.jan]||0)+1 );
+  const dupJans = Object.keys(janCounts).filter(j=>janCounts[j]>1);
+  if(dupJans.length>0){
+    const warn = el('div','card');
+    warn.style.borderColor = '#E39A7E';
+    warn.style.background = '#FBEFE9';
+    warn.innerHTML = `<h3 style="color:#B3401E;">⚠️ 重複しているじゃんネームがあります</h3>
+      <div style="font-size:12px;color:#8a4a2e;line-height:1.7;">
+      同じ名前が複数登録されていると、成績が別々に分かれてしまい正しく反映されません。下の一覧で該当の名前を確認し、片方を削除してください（削除する前に、どちらに正しい成績が入っているか「成績入力」タブで確認することをおすすめします）。<br><br>
+      <b>${dupJans.map(j=>`${escapeHtml(j)}（${janCounts[j]}件）`).join('、')}</b>
+      </div>`;
+    frag.appendChild(warn);
+  }
+
+  const addCard = el('div','card');
+  addCard.innerHTML = `<h3>選手を追加</h3>`;
+  const row = el('div','field-row');
+  row.innerHTML = `
+    <input type="text" id="newJan" placeholder="じゃんネーム" style="flex:1;min-width:110px;">
+    <input type="text" id="newReal" placeholder="氏名（任意）" style="flex:1;min-width:110px;">
+  `;
+  addCard.appendChild(row);
+  const row2 = el('div','field-row');
+  row2.innerHTML = `<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);"><input type="checkbox" id="newExcl">ランキング対象外（BOYS・店長など）</label>`;
+  addCard.appendChild(row2);
+  const addBtn = el('button','btn','追加する');
+  addBtn.onclick = async ()=>{
+    const jan = document.getElementById('newJan').value.trim();
+    const real = document.getElementById('newReal').value.trim();
+    const excl = document.getElementById('newExcl').checked;
+    if(!jan){ toast('じゃんネームを入力してください'); return; }
+    state.players.push({id: 'p'+Date.now()+Math.floor(Math.random()*1000), jan, real, excluded: excl});
+    await setStore('players', state.players);
+    toast('追加しました');
+    render();
+  };
+  addCard.appendChild(addBtn);
+  frag.appendChild(addCard);
+  ['newJan','newReal'].forEach(id=>{
+    const el2 = row.querySelector('#'+id);
+    if(el2) el2.addEventListener('keydown', e=>{
+      if(e.key==='Enter'){ e.preventDefault(); addBtn.click(); }
+    });
+  });
+
+  const listCard = el('div','card');
+  listCard.innerHTML = `<h3>選手一覧（${state.players.length}名）</h3>`;
+  const searchInp = document.createElement('input');
+  searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネームで検索';
+  searchInp.style.width = '100%'; searchInp.style.marginBottom = '10px';
+  listCard.appendChild(searchInp);
+  const itemsWrap = document.createElement('div');
+  listCard.appendChild(itemsWrap);
+
+  if(state.players.length===0){
+    itemsWrap.appendChild(el('div', null, '<p style="font-size:12.5px;color:var(--ink-soft);">まだ選手が登録されていません</p>'));
+  } else {
+    state.players.forEach(p=>{
+      const item = el('div','player-item');
+      const isDup = janCounts[p.jan]>1;
+      item.innerHTML = `
+        <div class="nm"><span class="jan">${escapeHtml(p.jan)}</span>${p.excluded?'<span class="tag-excl">対象外</span>':''}${isDup?'<span class="tag-excl" style="background:#F8D3C4;color:#B3401E;">重複</span>':''}<div class="real">${escapeHtml(p.real||'')}</div></div>
+      `;
+      const delBtn = el('button','btn danger','削除');
+      delBtn.style.padding = '5px 10px';
+      delBtn.style.fontSize = '11px';
+      let confirming = false;
+      let resetTimer = null;
+      delBtn.onclick = async ()=>{
+        if(!confirming){
+          confirming = true;
+          delBtn.textContent = '本当に削除？';
+          delBtn.style.background = '#B33A1E';
+          resetTimer = setTimeout(()=>{
+            confirming = false;
+            delBtn.textContent = '削除';
+            delBtn.style.background = '';
+          }, 3000);
+          return;
+        }
+        clearTimeout(resetTimer);
+        state.players = state.players.filter(x=>x.id!==p.id);
+        await setStore('players', state.players);
+        render();
+      };
+      item.appendChild(delBtn);
+      item.dataset.jan = p.jan;
+      itemsWrap.appendChild(item);
+    });
+  }
+  searchInp.addEventListener('input', ()=>{
+    const q = searchInp.value.trim();
+    itemsWrap.querySelectorAll('.player-item').forEach(el=>{
+      el.style.display = el.dataset.jan.includes(q) ? '' : 'none';
+    });
+  });
+  frag.appendChild(listCard);
+  return frag;
+}
+
+function renderEntryTab(){
+  const frag = document.createDocumentFragment();
+
+  const dateCard = el('div','card');
+  dateCard.innerHTML = `<h3>入力する日付</h3>`;
+  const dateInput = el('input');
+  dateInput.type = 'date';
+  dateInput.value = state.entryDate;
+  dateInput.onchange = async (e)=>{
+    state.entryDate = e.target.value;
+    await loadRecords(monthKeyOf(state.entryDate));
+    render();
+  };
+  dateCard.appendChild(dateInput);
+  frag.appendChild(dateCard);
+
+  const mk = monthKeyOf(state.entryDate);
+  const records = state.monthsData[mk] || {};
+  const loadFailed = state.recordsLoadWarning && state.recordsLoadWarning[mk];
+
+  if(loadFailed){
+    const warnCard = el('div','card');
+    warnCard.style.borderColor = '#E39A7E';
+    warnCard.style.background = '#FBEFE9';
+    warnCard.innerHTML = `<h3 style="color:#B3401E;">⚠️ この日のデータの読み込みに失敗した可能性があります</h3>
+      <div style="font-size:12px;color:#8a4a2e;line-height:1.7;margin-bottom:10px;">
+      通信の不調で、既存の成績データを正しく読み込めていない可能性があります。<b>この状態のまま保存すると、他の選手のこの日の成績が消えてしまう危険があります。</b>下のボタンでもう一度読み込み直してから入力してください。
+      </div>`;
+    const retryBtn = el('button','btn','もう一度読み込む');
+    retryBtn.onclick = ()=> retryInit();
+    warnCard.appendChild(retryBtn);
+    frag.appendChild(warnCard);
+  }
+
+  const entryCard = el('div','card');
+  entryCard.innerHTML = `<h3>${state.entryDate} の成績</h3>
+    <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;">その日の各選手の着順回数を入力して保存してください</div>`;
+
+  if(state.players.length === 0){
+    entryCard.appendChild(el('div',null,'<p style="font-size:12.5px;color:var(--ink-soft);">先に「選手管理」タブで選手を登録してください</p>'));
+  } else {
+    const searchInp = document.createElement('input');
+    searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネームで検索';
+    searchInp.style.width = '100%'; searchInp.style.marginBottom = '10px';
+    entryCard.appendChild(searchInp);
+
+    const headRow = el('div');
+    headRow.style.cssText = 'font-size:10.5px;color:var(--ink-soft);margin-bottom:4px;';
+    headRow.textContent = '選手ごとに 1着・2着・3着・トビ・役満 の回数を入力';
+    entryCard.appendChild(headRow);
+
+    const rowsWrap = document.createElement('div');
+    entryCard.appendChild(rowsWrap);
+
+    const inputs = {};
+    state.players.forEach(p=>{
+      const day = (records[p.id] && records[p.id][state.entryDate]) || {};
+      const r = el('div','entry-row');
+      r.dataset.jan = p.jan;
+      const nm = el('div','nm', escapeHtml(p.jan));
+      r.appendChild(nm);
+      const inputsWrap = el('div','inputs');
+      const fields = {};
+      const labels = {first:'1着', second:'2着', third:'3着', tobi:'トビ', yakuman:'役満'};
+      ['first','second','third','tobi','yakuman'].forEach(f=>{
+        const wrap = document.createElement('label');
+        const span = document.createElement('span'); span.textContent = labels[f];
+        const inp = document.createElement('input');
+        inp.type='number'; inp.min='0'; inp.value = day[f]||0;
+        wrap.appendChild(span); wrap.appendChild(inp);
+        inputsWrap.appendChild(wrap);
+        fields[f]=inp;
+      });
+      r.appendChild(inputsWrap);
+      inputs[p.id]=fields;
+      rowsWrap.appendChild(r);
+    });
+    searchInp.addEventListener('input', ()=>{
+      const q = searchInp.value.trim();
+      rowsWrap.querySelectorAll('.entry-row').forEach(el=>{
+        el.style.display = el.dataset.jan.includes(q) ? '' : 'none';
+      });
+    });
+
+    const saveBtn = el('button','btn','この日の成績を保存');
+    saveBtn.style.marginTop='12px'; saveBtn.style.width='100%';
+    if(loadFailed){
+      saveBtn.disabled = true;
+      saveBtn.style.opacity = '0.5';
+      saveBtn.textContent = '先に上の「もう一度読み込む」を押してください';
+    }
+    rowsWrap.querySelectorAll('input[type=number]').forEach(inp=>{
+      inp.addEventListener('keydown', e=>{
+        if(e.key==='Enter'){ e.preventDefault(); saveBtn.click(); }
+      });
+    });
+    saveBtn.onclick = async ()=>{
+      if(loadFailed){ toast('先にデータを読み込み直してください'); return; }
+      if(!records) return;
+      state.players.forEach(p=>{
+        const f = inputs[p.id];
+        const vals = {
+          first: parseInt(f.first.value)||0,
+          second: parseInt(f.second.value)||0,
+          third: parseInt(f.third.value)||0,
+          tobi: parseInt(f.tobi.value)||0,
+          yakuman: parseInt(f.yakuman.value)||0,
+        };
+        if(!records[p.id]) records[p.id] = {};
+        records[p.id][state.entryDate] = vals;
+      });
+      state.monthsData[mk] = records;
+      const ok = await setStore(recKey(mk), records);
+      if(ok) toast('保存しました 🐰');
+    };
+    entryCard.appendChild(saveBtn);
+  }
+  frag.appendChild(entryCard);
+  return frag;
+}
+
+function parseDelimited(line){
+  // Prefer tab (Google Sheets copy-paste), fall back to comma
+  const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+  return parts.map(s=>s.trim().replace(/^"|"$/g,''));
+}
+
+function renderImportTab(){
+  const frag = document.createDocumentFragment();
+
+  // ---- Player bulk import (two separate columns, zipped by row) ----
+  const pCard = el('div','card');
+  pCard.innerHTML = `<h3>選手をまとめて取り込み</h3>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.7;">
+    スプレッドシートで「じゃんネーム」の列だけをドラッグ選択してコピー →①に貼り付け。<br>
+    続けて「氏名」の列だけをドラッグ選択してコピー →②に貼り付け（同じ行の並び順にしてください）。<br>
+    氏名が無ければ②は空でもOKです。すでに登録済みのじゃんネームはスキップされます。
+    </div>`;
+  const pRow = el('div'); pRow.style.display='flex'; pRow.style.gap='8px';
+  const pCol1 = document.createElement('div'); pCol1.style.flex='1';
+  pCol1.innerHTML = `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">①じゃんネーム</div>`;
+  const pJanTa = document.createElement('textarea');
+  pJanTa.rows = 8; pJanTa.style.width='100%'; pJanTa.style.fontSize='12.5px'; pJanTa.style.fontFamily="'Noto Sans JP',sans-serif";
+  pJanTa.style.border='1.5px solid var(--line)'; pJanTa.style.borderRadius='9px'; pJanTa.style.padding='8px'; pJanTa.style.background='#FDFAF7';
+  pJanTa.placeholder = 'ママ\nBワタビィ\nコウ';
+  pCol1.appendChild(pJanTa);
+  const pCol2 = document.createElement('div'); pCol2.style.flex='1';
+  pCol2.innerHTML = `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">②氏名（任意）</div>`;
+  const pRealTa = document.createElement('textarea');
+  pRealTa.rows = 8; pRealTa.style.width='100%'; pRealTa.style.fontSize='12.5px'; pRealTa.style.fontFamily="'Noto Sans JP',sans-serif";
+  pRealTa.style.border='1.5px solid var(--line)'; pRealTa.style.borderRadius='9px'; pRealTa.style.padding='8px'; pRealTa.style.background='#FDFAF7';
+  pRealTa.placeholder = '青野里美\n\n田中コウ';
+  pCol2.appendChild(pRealTa);
+  pRow.append(pCol1, pCol2);
+  pCard.appendChild(pRow);
+
+  const pBtn = el('button','btn','選手を取り込む');
+  pBtn.style.marginTop='10px';
+  pBtn.onclick = async ()=>{
+    const jans = pJanTa.value.split('\n').map(s=>s.trim());
+    const reals = pRealTa.value.split('\n').map(s=>s.trim());
+    // trim trailing empty rows
+    while(jans.length && jans[jans.length-1]==='') jans.pop();
+    if(jans.length===0){ toast('じゃんネームを貼り付けてください'); return; }
+    const existingJans = new Set(state.players.map(p=>p.jan));
+    let added=0, skipped=0;
+    jans.forEach((jan, i)=>{
+      if(!jan) return;
+      if(existingJans.has(jan)){ skipped++; return; }
+      state.players.push({id:'p'+Date.now()+Math.floor(Math.random()*10000), jan, real: reals[i]||'', excluded:false});
+      existingJans.add(jan);
+      added++;
+    });
+    await setStore('players', state.players);
+    toast(`選手 ${added}件 追加（重複 ${skipped}件 スキップ）`);
+    pJanTa.value=''; pRealTa.value='';
+    render();
+  };
+  pCard.appendChild(pBtn);
+  frag.appendChild(pCard);
+
+  // ---- Score bulk import (multi-day, name column + repeating 6-col day blocks) ----
+  const sCard = el('div','card');
+  sCard.innerHTML = `<h3>成績をまとめて取り込み（複数日まとめてOK）</h3>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.7;">
+    ①開始日と、貼り付ける日数（1日分だけなら1のまま）を選ぶ<br>
+    ②スプレッドシートの「じゃんネーム」の列をコピー → 左の欄に貼り付け<br>
+    ③日付ブロック（<b>G数・1着・2着・3着・トビ・役満の6列を1日分</b>として、日数ぶん横に連続選択）をコピー → 右の欄に貼り付け。<b>G数の列も含めて選択してOK</b>です（自動で無視されます）。空欄のセルは0として扱われます。<br>
+    開始日から順番に1日ずつ日付が進んでいくものとして読み込みます。じゃんネームが選手一覧に無い行はスキップされます。
+    </div>`;
+  const dateRow = el('div','field-row');
+  const dLabel = el('div', null, '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">開始日</div>');
+  const dInput = document.createElement('input'); dInput.type='date'; dInput.value = state.entryDate;
+  dateRow.appendChild(dInput);
+  sCard.appendChild(dLabel);
+  sCard.appendChild(dateRow);
+
+  const daysLabel = el('div', null, '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">日数（貼り付けた日付ブロックの数）</div>');
+  const daysRow = el('div','field-row');
+  const daysInput = document.createElement('input'); daysInput.type='number'; daysInput.min='1'; daysInput.value='1'; daysInput.style.width='70px';
+  daysRow.appendChild(daysInput);
+  sCard.appendChild(daysLabel);
+  sCard.appendChild(daysRow);
+
+  const sRow = el('div'); sRow.style.display='flex'; sRow.style.gap='8px';
+  const sCol1 = document.createElement('div'); sCol1.style.flex='1';
+  sCol1.innerHTML = `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">じゃんネーム</div>`;
+  const sJanTa = document.createElement('textarea');
+  sJanTa.rows = 8; sJanTa.style.width='100%'; sJanTa.style.fontSize='12.5px'; sJanTa.style.fontFamily="'Noto Sans JP',sans-serif";
+  sJanTa.style.border='1.5px solid var(--line)'; sJanTa.style.borderRadius='9px'; sJanTa.style.padding='8px'; sJanTa.style.background='#FDFAF7';
+  sJanTa.placeholder = 'ママ\nBワタビィ';
+  sCol1.appendChild(sJanTa);
+  const sCol2 = document.createElement('div'); sCol2.style.flex='1';
+  sCol2.innerHTML = `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">G数 1着 2着 3着 トビ 役満（日数ぶん横に連続）</div>`;
+  const sStatsTa = document.createElement('textarea');
+  sStatsTa.rows = 8; sStatsTa.style.width='100%'; sStatsTa.style.fontSize='12.5px'; sStatsTa.style.fontFamily="'Noto Sans JP',sans-serif";
+  sStatsTa.style.border='1.5px solid var(--line)'; sStatsTa.style.borderRadius='9px'; sStatsTa.style.padding='8px'; sStatsTa.style.background='#FDFAF7';
+  sStatsTa.placeholder = '6\t2\t1\t3\t0\t1\n0\t0\t0\t0\t0\t0';
+  sCol2.appendChild(sStatsTa);
+  sRow.append(sCol1, sCol2);
+  sCard.appendChild(sRow);
+
+  const checkLine = el('div');
+  checkLine.style.cssText = 'margin-top:8px;font-size:11.5px;font-weight:700;padding:6px 8px;border-radius:8px;';
+  sCard.appendChild(checkLine);
+
+  function updateCheck(){
+    const jans = sJanTa.value.split('\n').map(s=>s.trim()).filter(s=>s!=='');
+    const statLines = sStatsTa.value.split('\n').map(s=>s.trim()).filter(s=>s!=='');
+    if(jans.length===0 && statLines.length===0){
+      checkLine.textContent = '';
+      checkLine.style.background = 'transparent';
+      return;
+    }
+    const days = Math.max(1, parseInt(daysInput.value)||1);
+    if(jans.length === statLines.length){
+      checkLine.textContent = `✅ じゃんネーム ${jans.length}行 ／ 数値 ${statLines.length}行 ── 行数が揃っています（${days}日分として読み込みます）`;
+      checkLine.style.background = '#E5F3EA'; checkLine.style.color = '#2C6B3F';
+    } else {
+      checkLine.textContent = `⚠️ じゃんネーム ${jans.length}行 ／ 数値 ${statLines.length}行 ── 行数がズレています`;
+      checkLine.style.background = '#FBE3DE'; checkLine.style.color = '#B3401E';
+    }
+  }
+  sJanTa.addEventListener('input', updateCheck);
+  sStatsTa.addEventListener('input', updateCheck);
+  daysInput.addEventListener('input', updateCheck);
+
+  const sBtn = el('button','btn','まとめて取り込む');
+  sBtn.style.marginTop='10px';
+  sBtn.onclick = async ()=>{
+    const startStr = dInput.value;
+    if(!startStr){ toast('開始日を選んでください'); return; }
+    const jans = sJanTa.value.split('\n').map(s=>s.trim());
+    while(jans.length && jans[jans.length-1]==='') jans.pop();
+    const statLines = sStatsTa.value.split('\n');
+    if(jans.length===0){ toast('じゃんネームを貼り付けてください'); return; }
+    const byJan = {}; state.players.forEach(p=>byJan[p.jan]=p.id);
+    const touchedMonths = new Set();
+    const days = Math.max(1, parseInt(daysInput.value)||1);
+    const expectedCols = days*6;
+    let matched=0, unmatched=[];
+    for(let i=0;i<jans.length;i++){
+      const jan = jans[i];
+      if(!jan) continue;
+      const pid = byJan[jan];
+      if(!pid){ unmatched.push(jan); continue; }
+      let cols = parseDelimited(statLines[i]||'');
+      // pad short rows (trailing blank cells often get dropped when copied) / trim long ones
+      while(cols.length < expectedCols) cols.push('0');
+      if(cols.length > expectedCols) cols = cols.slice(0, expectedCols);
+      const num = v => parseInt(v)||0;
+      for(let d=0; d<days; d++){
+        const chunk = cols.slice(d*6, d*6+6);
+        const dateStr = addDays(startStr, d);
+        const mk = monthKeyOf(dateStr);
+        touchedMonths.add(mk);
+        if(!state.monthsData[mk]) state.monthsData[mk] = await getStore(recKey(mk), {});
+        const records = state.monthsData[mk];
+        if(!records[pid]) records[pid] = {};
+        records[pid][dateStr] = {
+          first: num(chunk[1]), second: num(chunk[2]), third: num(chunk[3]),
+          tobi: num(chunk[4]), yakuman: num(chunk[5]),
+        };
+      }
+      matched++;
+    }
+    for(const mk of touchedMonths){
+      await setStore(recKey(mk), state.monthsData[mk]);
+    }
+    await refreshKnownMonths();
+    toast(`${matched}名 × ${days}日分 取り込み${unmatched.length?`（未登録: ${unmatched.join('、')}）`:''}`);
+    sJanTa.value=''; sStatsTa.value='';
+    updateCheck();
+    render();
+  };
+  sCard.appendChild(sBtn);
+  frag.appendChild(sCard);
+
+  return frag;
+}
+
+/* ---------- PLAYER DETAIL ---------- */
+function openPlayerDetail(playerId){
+  const p = state.players.find(x=>x.id===playerId);
+  if(!p) return;
+  const records = state.monthsData[state.currentMonth] || {};
+  const stats = calcStats(playerId, records);
+  const days = records[playerId] || {};
+  const dayList = Object.keys(days).sort().map(date=>{
+    const d = days[date];
+    const games = (d.first||0)+(d.second||0)+(d.third||0);
+    const pts = (d.first||0)*3 + (d.second||0)*1 - (d.third||0)*1 + (d.tobi||0)*1;
+    const avg = games>0 ? ((d.first*1+d.second*2+d.third*3)/games) : null;
+    return {date, ...d, games, pts, avg};
+  });
+
+  const overlay = el('div','detail-overlay');
+  const sheet = el('div','detail-sheet');
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+
+  const head = el('div','detail-head');
+  head.innerHTML = `<h2>${escapeHtml(p.jan)}</h2>`;
+  const closeBtn = el('button','detail-close','✕');
+  closeBtn.onclick = ()=> overlay.remove();
+  head.appendChild(closeBtn);
+  sheet.appendChild(head);
+  sheet.appendChild(el('div','detail-sub', `${escapeHtml(p.real||'')}　${monthLabel(state.currentMonth)}の成績`));
+
+  const grid = el('div','stat-grid');
+  const boxes = [
+    ['P', stats.points],
+    ['G数', stats.games],
+    ['平均順位', stats.avgRank!==null ? stats.avgRank.toFixed(2) : '-'],
+    ['トップ率', stats.topRate!==null ? stats.topRate.toFixed(1)+'%' : '-'],
+  ];
+  boxes.forEach(([l,v])=>{
+    grid.appendChild(el('div','stat-box', `<div class="v">${v}</div><div class="l">${l}</div>`));
+  });
+  sheet.appendChild(grid);
+
+  const recentDays = dayList.filter(d=>d.games>0).slice(-5);
+  const recentGames = recentDays.reduce((s,d)=>s+d.games,0);
+  const recentAvg = recentGames>0
+    ? (recentDays.reduce((s,d)=> s + d.first*1 + d.second*2 + d.third*3, 0) / recentGames)
+    : null;
+
+  const grid2 = el('div','stat-grid');
+  const boxes2 = [
+    ['役満回数', stats.yakuman+'回'],
+    ['ラス回避率', stats.lastAvoidRate!==null ? stats.lastAvoidRate.toFixed(1)+'%' : '-'],
+    ['トビ率', stats.tobiRate!==null ? stats.tobiRate.toFixed(1)+'%' : '-'],
+    [`直近${recentDays.length}日平均`, recentAvg!==null ? recentAvg.toFixed(2)+'位' : '-'],
+  ];
+  boxes2.forEach(([l,v])=>{
+    grid2.appendChild(el('div','stat-box', `<div class="v">${v}</div><div class="l">${l}</div>`));
+  });
+  sheet.appendChild(grid2);
+
+  const pieCard = el('div','chart-card');
+  pieCard.innerHTML = `<h4>着順の割合 🐰</h4>`;
+  pieCard.appendChild(buildRankPieChart(stats));
+  sheet.appendChild(pieCard);
+
+  const chartCard = el('div','chart-card');
+  chartCard.innerHTML = `<h4>着順の推移</h4>`;
+  chartCard.appendChild(buildTrendChart(dayList));
+  sheet.appendChild(chartCard);
+
+  const tableCard = el('div','chart-card');
+  tableCard.innerHTML = `<h4>日別の成績</h4>`;
+  if(dayList.length===0){
+    tableCard.appendChild(el('div',null,'<p style="font-size:12px;color:var(--ink-soft);">この月の記録はまだありません</p>'));
+  } else {
+    const table = document.createElement('table');
+    table.className = 'day-table';
+    table.innerHTML = `<thead><tr><th>日付</th><th>1着</th><th>2着</th><th>3着</th><th>トビ</th><th>役満</th><th>P</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+    dayList.forEach(d=>{
+      const tr = document.createElement('tr');
+      const md = d.date.slice(5).replace('-','/');
+      tr.innerHTML = `<td>${md}</td><td>${d.first||0}</td><td>${d.second||0}</td><td>${d.third||0}</td><td>${d.tobi||0}</td><td>${d.yakuman||0}</td><td>${d.pts}</td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    const tfoot = document.createElement('tfoot');
+    const totalTr = document.createElement('tr');
+    totalTr.style.cssText = 'font-weight:800;background:#FDF1F6;';
+    totalTr.innerHTML = `<td>合計</td><td>${stats.first}</td><td>${stats.second}</td><td>${stats.third}</td><td>${stats.tobi}</td><td>${stats.yakuman}</td><td>${stats.points}</td>`;
+    tfoot.appendChild(totalTr);
+    table.appendChild(tfoot);
+    tableCard.appendChild(table);
+  }
+  sheet.appendChild(tableCard);
+
+  document.body.appendChild(overlay);
+}
+
+function buildTrendChart(dayList){
+  const withGames = dayList.filter(d=>d.avg!==null);
+  if(withGames.length===0){
+    return el('div',null,'<p style="font-size:12px;color:var(--ink-soft);padding:20px 4px;text-align:center;">まだグラフに表示できるデータがありません</p>');
+  }
+  const w = 480, h = 150, padL = 28, padR = 14, padT = 14, padB = 22;
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+  const n = withGames.length;
+  const maxRank = Math.max(3, ...withGames.map(d=>Math.ceil(d.avg)));
+  const yFor = (rank)=> padT + ( (rank-1) / (maxRank-1) ) * innerH; // rank 1 at top
+  const xFor = (i)=> n===1 ? padL+innerW/2 : padL + (i/(n-1))*innerW;
+
+  const points = withGames.map((d,i)=>({x:xFor(i), y:yFor(d.avg), d}));
+  const pathD = points.map((p,i)=> (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+
+  let gridLines = '';
+  for(let r=1; r<=maxRank; r++){
+    const y = yFor(r);
+    gridLines += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#F0E4EC" stroke-width="1"/>`;
+    gridLines += `<text x="${padL-6}" y="${y+3}" font-size="9" fill="#9B9B9B" text-anchor="end">${r}位</text>`;
+  }
+
+  let xLabels = '';
+  const labelStep = Math.max(1, Math.ceil(n/6));
+  points.forEach((p,i)=>{
+    if(i%labelStep===0 || i===points.length-1){
+      const md = p.d.date.slice(5).replace('-','/');
+      xLabels += `<text x="${p.x}" y="${h-6}" font-size="9" fill="#9B9B9B" text-anchor="middle">${md}</text>`;
+    }
+  });
+
+  const dots = points.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#E6187E" stroke="#fff" stroke-width="1.5"/>`).join('');
+
+  const svg = `
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">
+      ${gridLines}
+      <path d="${pathD}" fill="none" stroke="#E6187E" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      ${xLabels}
+    </svg>
+  `;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = svg;
+  return wrap;
+}
+
+function buildRankPieChart(stats){
+  const total = stats.games;
+  if(!total || total===0){
+    return el('div',null,'<p style="font-size:12px;color:var(--ink-soft);padding:20px 4px;text-align:center;">まだグラフに表示できるデータがありません</p>');
+  }
+  const segments = [
+    {label:'1着', value: stats.first, color:'#E8B94A'},
+    {label:'2着', value: stats.second, color:'#FF8AC0'},
+    {label:'3着', value: stats.third, color:'#E3C9D6'},
+  ];
+  const size = 136, r = 50, stroke = 22, cx = size/2, cy = size/2;
+  const circumference = 2*Math.PI*r;
+  let offset = 0;
+  let arcs = '';
+  segments.forEach(seg=>{
+    const frac = seg.value/total;
+    if(frac>0){
+      const len = circumference*frac;
+      const gap = Math.min(3, len*0.15); // tiny cute gap between slices
+      arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${stroke}"
+        stroke-dasharray="${Math.max(len-gap,0).toFixed(2)} ${(circumference-len+gap).toFixed(2)}"
+        stroke-dashoffset="${(-offset).toFixed(2)}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += len;
+    }
+  });
+  const svg = `
+    <svg viewBox="0 0 ${size} ${size}" style="width:136px;height:136px;flex:none;filter:drop-shadow(0 4px 10px rgba(230,24,126,0.15));">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#F6D8E7" stroke-width="${stroke}"/>
+      ${arcs}
+      <text x="${cx}" y="${cy-3}" text-anchor="middle" font-family="'M PLUS Rounded 1c',sans-serif" font-weight="800" font-size="21" fill="#AD1263">${total}</text>
+      <text x="${cx}" y="${cy+14}" text-anchor="middle" font-family="'Noto Sans JP',sans-serif" font-size="10" fill="#9B9B9B">戦</text>
+    </svg>
+  `;
+  const wrap = el('div','pie-wrap');
+  wrap.innerHTML = svg;
+  const legend = el('div','pie-legend');
+  segments.forEach(seg=>{
+    const pct = (seg.value/total*100).toFixed(1);
+    const item = el('div','pie-legend-item');
+    item.innerHTML = `<span class="pie-dot" style="background:${seg.color};"></span>${seg.label}：<b>${seg.value}回</b> <span class="pct">(${pct}%)</span>`;
+    legend.appendChild(item);
+  });
+  wrap.appendChild(legend);
+  return wrap;
+}
+
+function renderSettingsTab(){
+  const frag = document.createDocumentFragment();
+  const card = el('div','card');
+  card.innerHTML = `<h3>スタッフ用PINの変更</h3>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">この画面に入るためのPINコードを変更できます</div>`;
+  const row = el('div','field-row');
+  const inp = document.createElement('input');
+  inp.type='text'; inp.maxLength=6; inp.placeholder='新しいPIN（数字）'; inp.value='';
+  row.appendChild(inp);
+  card.appendChild(row);
+  const btn = el('button','btn','PINを更新');
+  btn.onclick = async ()=>{
+    if(!/^\d{3,6}$/.test(inp.value)){ toast('3〜6桁の数字で入力してください'); return; }
+    state.pin = inp.value;
+    await setStore('settings', {pin: state.pin, labelMode: state.labelMode});
+    toast('PINを更新しました');
+  };
+  card.appendChild(btn);
+  frag.appendChild(card);
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); btn.click(); } });
+
+  const labelCard = el('div','card');
+  labelCard.innerHTML = `<h3>ランキングの表示文言</h3>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.7;">
+    公開画面の「まんキン」「ポイントランキング」の頭につく言葉を切り替えられます。<br>
+    月の途中は「現在の」、月末で締めた後は「今月の」に切り替える、といった使い方を想定しています（定休日の関係で自動切り替えではなく、手動で切り替える形にしています）。
+    </div>`;
+  const labelRow = el('div','field-row');
+  ['現在の','今月の'].forEach(mode=>{
+    const b = document.createElement('button');
+    b.textContent = mode;
+    b.className = 'btn' + (state.labelMode===mode ? '' : ' ghost');
+    b.onclick = async ()=>{
+      state.pin = state.pin; // no-op, keep pin
+      await setStore('settings', {pin: state.pin, labelMode: mode});
+      state.labelMode = mode;
+      toast(`「${mode}」に切り替えました`);
+      render();
+    };
+    labelRow.appendChild(b);
+  });
+  labelCard.appendChild(labelRow);
+  frag.appendChild(labelCard);
+
+  const info = el('div','card');
+  info.innerHTML = `<h3>このアプリについて</h3>
+    <p style="font-size:12px;color:var(--ink-soft);line-height:1.7;">
+    公開画面（🐰ラビ王ランキング）はLINEのリッチメニューからリンクできます。<br>
+    データはこの画面の操作内容がそのまま自動でランキングに反映されます。スプレッドシートでの集計作業は不要です。
+    </p>`;
+  frag.appendChild(info);
+
+  // ---- Backup export/import ----
+  const backupCard = el('div','card');
+  backupCard.innerHTML = `<h3>データのバックアップ</h3>
+    <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-bottom:10px;">
+    アプリの中身を更新したときなど、公開URLが変わってデータが引き継がれない場合に備えて、選手・成績データを丸ごとバックアップできます。<br>
+    <b>書き出す</b>：下のテキストが表示されるので、全選択（Ctrl+A）してコピーし、どこかに保存しておいてください。<br>
+    <b>読み込む</b>：保存しておいたテキストを貼り付けて「復元する」を押すと、このURLのデータに上書きされます。
+    </p>`;
+  const exportBtn = el('button','btn','バックアップを書き出す');
+  const exportTa = document.createElement('textarea');
+  exportTa.rows = 6; exportTa.readOnly = true; exportTa.style.width='100%'; exportTa.style.marginTop='10px';
+  exportTa.style.fontSize='10.5px'; exportTa.style.fontFamily='monospace';
+  exportTa.style.border='1.5px solid var(--line)'; exportTa.style.borderRadius='9px'; exportTa.style.padding='8px'; exportTa.style.background='#FDFAF7';
+  exportTa.style.display='none';
+  exportBtn.onclick = async ()=>{
+    let backup;
+    try{
+      const all = await gasFetchGet('exportAll');
+      backup = {
+        exportedAt: new Date().toISOString(),
+        players: all.players || [],
+        settings: {pin: all.settings ? all.settings.pin : state.pin},
+        records: all.records || {},
+      };
+    }catch(e){
+      toast('書き出しに失敗しました。通信状況を確認してもう一度お試しください');
+      return;
+    }
+    exportTa.value = JSON.stringify(backup);
+    exportTa.style.display = 'block';
+    exportTa.focus(); exportTa.select();
+    toast('下のテキストを全選択してコピーしてください');
+  };
+  backupCard.appendChild(exportBtn);
+  backupCard.appendChild(exportTa);
+
+  const importHead = document.createElement('div');
+  importHead.style.cssText = 'margin-top:16px;font-size:11px;color:var(--ink-soft);';
+  importHead.textContent = 'バックアップを読み込む（貼り付け）';
+  backupCard.appendChild(importHead);
+  const importTa = document.createElement('textarea');
+  importTa.rows = 5; importTa.style.width='100%'; importTa.style.marginTop='6px';
+  importTa.style.fontSize='10.5px'; importTa.style.fontFamily='monospace';
+  importTa.style.border='1.5px solid var(--line)'; importTa.style.borderRadius='9px'; importTa.style.padding='8px'; importTa.style.background='#FDFAF7';
+  importTa.placeholder = 'ここにバックアップのテキストを貼り付け';
+  backupCard.appendChild(importTa);
+  const importBtn = el('button','btn secondary','復元する（上書き）');
+  importBtn.style.marginTop='10px';
+  importBtn.onclick = async ()=>{
+    let backup;
+    try{ backup = JSON.parse(importTa.value.trim()); }
+    catch(e){ toast('内容が正しいバックアップの形式ではありません'); return; }
+    if(!backup.players || !backup.records){ toast('内容が正しいバックアップの形式ではありません'); return; }
+    try{
+      await gasFetchPost('importAll', {data: backup});
+    }catch(e){
+      toast('復元に失敗しました。通信状況を確認してもう一度お試しください');
+      return;
+    }
+    state.players = backup.players;
+    if(backup.settings && backup.settings.pin) state.pin = backup.settings.pin;
+    state.monthsData = {};
+    Object.keys(backup.records).forEach(mk=>{ state.monthsData[mk] = backup.records[mk]; });
+    await refreshKnownMonths();
+    toast(`復元しました（選手${state.players.length}名）`);
+    importTa.value='';
+    render();
+  };
+  backupCard.appendChild(importBtn);
+  frag.appendChild(backupCard);
+
+  return frag;
+}
+
+init();
+</script>
+</body>
+</html>
