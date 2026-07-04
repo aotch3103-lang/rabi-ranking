@@ -1603,8 +1603,9 @@ function renderSettingsTab(){
       lastDupGroups = r.groups || [];
       dupResultWrap.innerHTML = '';
       if(lastDupGroups.length===0){
-        dupResultWrap.innerHTML = '<p style="font-size:12.5px;color:#2C6B3F;">重複は見つかりませんでした 🐰</p>';
-        mergeDupBtn.style.display = 'none';
+        dupResultWrap.innerHTML = '<p style="font-size:12.5px;color:#2C6B3F;">同じ名前の重複は見つかりませんでした 🐰<br><span style="color:var(--ink-soft);">（日付の形式ズレなど別の不具合が疑われる場合は、下のボタンを押すとデータの整形だけ行えます）</span></p>';
+        mergeDupBtn.textContent = 'データを整形する（重複統合なし）';
+        mergeDupBtn.style.display = 'inline-block';
       } else {
         const summary = el('div');
         summary.style.cssText = 'font-size:12.5px;color:#B3401E;font-weight:700;margin-bottom:8px;';
@@ -1619,6 +1620,7 @@ function renderSettingsTab(){
           line.innerHTML = `<b>${escapeHtml(g.jan)}</b>：${g.players.map(p=>`${p.games}戦`).join(' / ')}（一番対局数が多い記録を残して統合します）${overlapNote}`;
           dupResultWrap.appendChild(line);
         });
+        mergeDupBtn.textContent = 'この内容で統合を実行する（元に戻せません）';
         mergeDupBtn.style.display = 'inline-block';
       }
     }catch(e){
