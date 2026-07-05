@@ -1343,14 +1343,16 @@ function openPlayerDetail(playerId){
 
   const tableCard = el('div','chart-card');
   tableCard.innerHTML = `<h4>日別の成績</h4>`;
-  if(dayList.length===0){
+  // 来店が無い日(その日の対局数が0)は一覧に出さず、実際に打った日だけ表示する
+  const playedDays = dayList.filter(d=>d.games>0);
+  if(playedDays.length===0){
     tableCard.appendChild(el('div',null,'<p style="font-size:12px;color:var(--ink-soft);">この月の記録はまだありません</p>'));
   } else {
     const table = document.createElement('table');
     table.className = 'day-table';
     table.innerHTML = `<thead><tr><th>日付</th><th>1着</th><th>2着</th><th>3着</th><th>トビ</th><th>役満</th><th>P</th></tr></thead>`;
     const tbody = document.createElement('tbody');
-    dayList.forEach(d=>{
+    playedDays.forEach(d=>{
       const tr = document.createElement('tr');
       const md = d.date.slice(5).replace('-','/');
       tr.innerHTML = `<td>${md}</td><td>${d.first||0}</td><td>${d.second||0}</td><td>${d.third||0}</td><td>${d.tobi||0}</td><td>${d.yakuman||0}</td><td>${d.pts}</td>`;
