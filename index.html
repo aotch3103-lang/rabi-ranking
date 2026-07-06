@@ -548,6 +548,7 @@ function renderPublic(){
   const restPlayers = ranked.filter(p=>!podiumIds.has(p.id));
 
   frag.appendChild(el('div','ranking-title',`<span class="em">🏆</span> ${state.labelMode}ポイントランキング`));
+  frag.appendChild(el('div',null,'<p style="font-size:11px;color:var(--ink-soft);margin:0 0 6px 2px;">👆 名前をタップすると、くわしい成績が見られるよ</p>'));
   if(podiumPlayers.length >= 1){
     const podium = el('div','podium');
     const slots = [podiumPlayers[1], podiumPlayers[0], podiumPlayers[2]];
@@ -584,6 +585,7 @@ function renderPublic(){
         <div class="pts">${p.points}P</div>
         <div class="sub">${p.games>0 ? `${p.first}-${p.second}-${p.third}-${p.tobi}` : '-'}</div>
       </div>
+      <div style="color:var(--ink-soft);font-size:16px;flex:none;margin-left:2px;">›</div>
     `;
     row.onclick = ()=> openPlayerDetail(p.id);
     list.appendChild(row);
