@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>ラビ王ランキング</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,6 +37,10 @@
     -webkit-font-smoothing:antialiased;
   }
   .app{max-width:520px;margin:0 auto;padding:20px 16px 60px;}
+  .app.wide{max-width:1200px;}
+  .entry-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 20px;}
+  .entry-grid .entry-name-row{border-bottom:1px solid var(--line);}
+  .entry-list-col{display:block;}
   .logo-wrap{display:flex;justify-content:center;margin-bottom:2px;}
   .logo-wrap img{width:74px;height:auto;filter:drop-shadow(0 4px 10px rgba(230,24,126,0.18));}
   .brand{
@@ -251,6 +258,7 @@ function toast(msg){
 // 上書きしてしまう事故が起きるため、保存中は他の操作をブロックする
 let isSaving = false;
 let savingOverlayEl = null;
+let entrySending = {}; // 成績入力の楽観的保存の二重送信防止（key: 月:選手ID:日付）
 function showSavingOverlay(){
   if(savingOverlayEl) return;
   savingOverlayEl = document.createElement('div');
@@ -353,17 +361,47 @@ let state = {
   adminTab: 'players',   // players | entry
   unlocked: false,
   pin: null,
-  entryDate: todayStr(),
+  entryDate: loadSavedEntryDate(),
   loadWarning: false,
   knownMonths: [],
-  labelMode: '現在の',
+  monthLoading: false,
 };
 
 function todayStr(){
   const d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+// 深夜営業を考慮した「営業日」。午前6時より前は前日の日付を返す。
+function businessDateStr(){
+  const d = new Date();
+  if(d.getHours() < 6){
+    d.setDate(d.getDate()-1);
+  }
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function loadSavedEntryDate(){
+  try{
+    const raw = localStorage.getItem('dorapan_entryDate_v2');
+    if(!raw) return businessDateStr();
+    const saved = JSON.parse(raw);
+    // 前回保存したときと「同じ営業日」の続きなら、選んでいた日付をそのまま復元する。
+    // 営業日が変わっていたら（＝日をまたいで新しい営業日になっていたら）、自動で新しい営業日の日付にする。
+    if(saved && saved.savedBusinessDate === businessDateStr()) return saved.date;
+    return businessDateStr();
+  }catch(e){ return businessDateStr(); }
+}
+function saveEntryDate(dateStr){
+  try{
+    localStorage.setItem('dorapan_entryDate_v2', JSON.stringify({date: dateStr, savedBusinessDate: businessDateStr()}));
+  }catch(e){ /* 保存に失敗しても致命的ではないので無視 */ }
+}
 function monthKeyOf(dateStr){ return dateStr.slice(0,7); }
+// 表示中の月が「進行中の営業月」なら『現在の』、過去月なら『〇月の』を自動で返す
+function labelModeFor(mk){
+  if(mk === monthKeyOf(businessDateStr())) return '現在の';
+  const m = parseInt(mk.split('-')[1]);
+  return `${m}月の`;
+}
 function addDays(dateStr, n){
   const [y,m,d] = dateStr.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m-1, d));
@@ -378,10 +416,15 @@ function recKey(mk){ return 'records_'+mk; }
 
 async function loadRecords(mk){
   if(state.monthsData[mk]) return state.monthsData[mk];
-  const result = await getStoreRetry(recKey(mk), {});
-  state.monthsData[mk] = result.value;
+  const result = await getStoreRetry(recKey(mk), null);
   if(!state.recordsLoadWarning) state.recordsLoadWarning = {};
-  state.recordsLoadWarning[mk] = result.failed && Object.keys(result.value).length===0;
+  if(result.failed || result.value === null){
+    // 取得失敗時はキャッシュに空データを入れない（次回アクセス時に再取得を試みられるようにする）
+    state.recordsLoadWarning[mk] = true;
+    return {};
+  }
+  state.monthsData[mk] = result.value;
+  state.recordsLoadWarning[mk] = false;
   return state.monthsData[mk];
 }
 
@@ -442,9 +485,8 @@ async function init(){
   }
   state.players = (allData && allData.players) || [];
   state.loadWarning = allFailed && state.players.length===0;
-  const settings = (allData && allData.settings) || {pin:'0403', labelMode:'現在の'};
+  const settings = (allData && allData.settings) || {pin:'0403'};
   state.pin = settings.pin;
-  state.labelMode = settings.labelMode || '現在の';
   state.knownMonths = (allData && allData.months) || [];
   state.currentMonth = monthKeyOf(todayStr());
   await loadRecords(state.currentMonth);
@@ -462,6 +504,7 @@ function retryInit(){
 /* ---------- RENDER ---------- */
 function render(){
   root.innerHTML = '';
+  root.classList.toggle('wide', state.view === 'admin' && state.adminTab === 'entry');
   if(state.view === 'public'){
     root.appendChild(renderPublic());
   } else {
@@ -498,7 +541,10 @@ function renderPublic(){
   });
   picker.onchange = async (e)=>{
     state.currentMonth = e.target.value;
+    state.monthLoading = true;
+    render();
     await loadRecords(state.currentMonth);
+    state.monthLoading = false;
     render();
   };
   frag.appendChild(picker);
@@ -510,6 +556,12 @@ function renderPublic(){
     <div><b>トビ +1P</b>飛び賞</div>
   `);
   frag.appendChild(rules);
+
+  if(state.monthLoading){
+    frag.appendChild(el('div','empty','読み込み中… 🐰 少し待ってね'));
+    frag.appendChild(footerLink());
+    return frag;
+  }
 
   const records = state.monthsData[state.currentMonth] || {};
   const ranked = state.players
@@ -525,7 +577,7 @@ function renderPublic(){
     mankin.innerHTML = `
       <div class="mankin-icon">👑</div>
       <div>
-        <div class="mankin-label">${state.labelMode} まんキン</div>
+        <div class="mankin-label">${labelModeFor(state.currentMonth)} まんキン</div>
         <div class="mankin-name">${mankinPlayers.map(p=>escapeHtml(p.jan)).join('・')}</div>
       </div>
       <div class="mankin-count"><div class="n">${maxYakuman}</div><div class="l">役満</div></div>
@@ -547,7 +599,7 @@ function renderPublic(){
   const podiumIds = new Set(podiumPlayers.map(p=>p.id));
   const restPlayers = ranked.filter(p=>!podiumIds.has(p.id));
 
-  frag.appendChild(el('div','ranking-title',`<span class="em">🏆</span> ${state.labelMode}ポイントランキング`));
+  frag.appendChild(el('div','ranking-title',`<span class="em">🏆</span> ${labelModeFor(state.currentMonth)}ポイントランキング`));
   frag.appendChild(el('div',null,'<p style="font-size:11px;color:var(--ink-soft);margin:0 0 6px 2px;">👆 名前をタップすると、くわしい成績が見られるよ</p>'));
   if(podiumPlayers.length >= 1){
     const podium = el('div','podium');
@@ -739,6 +791,7 @@ function renderPlayersTab(){
   addCard.appendChild(row3);
   const addBtn = el('button','btn','追加する');
   addBtn.onclick = ()=> runExclusive(async ()=>{
+    if(state.loadWarning){ toast('⚠️ 選手データの読み込みに失敗した状態です。先にページを再読み込みしてください'); return; }
     const jan = document.getElementById('newJan').value.trim();
     const real = document.getElementById('newReal').value.trim();
     const excl = document.getElementById('newExcl').checked;
@@ -830,6 +883,7 @@ function renderPlayersTab(){
         const cancelEditBtn = el('button','btn ghost','キャンセル');
         cancelEditBtn.style.fontSize='11px'; cancelEditBtn.style.padding='7px 12px';
         saveEditBtn.onclick = ()=> runExclusive(async ()=>{
+          if(state.loadWarning){ toast('⚠️ 選手データの読み込みに失敗した状態です。先にページを再読み込みしてください'); return; }
           const newJan = janInp.value.trim();
           const newReal = realInp.value.trim();
           if(!newJan){ toast('じゃんネームを入力してください'); return; }
@@ -854,6 +908,7 @@ function renderPlayersTab(){
       boyBtn.style.padding = '5px 10px';
       boyBtn.style.fontSize = '11px';
       boyBtn.onclick = ()=> runExclusive(async ()=>{
+        if(state.loadWarning){ toast('⚠️ 選手データの読み込みに失敗した状態です。先にページを再読み込みしてください'); return; }
         // 最新の選手一覧を取ってから、対象の選手を探してboyを反転する（取りこぼし防止）
         try{
           const fresh = await getStoreRetry('players', state.players);
@@ -885,6 +940,7 @@ function renderPlayersTab(){
         }
         clearTimeout(resetTimer);
         runExclusive(async ()=>{
+          if(state.loadWarning){ toast('⚠️ 選手データの読み込みに失敗した状態です。先にページを再読み込みしてください'); return; }
           try{
             const fresh = await getStoreRetry('players', state.players);
             state.players = fresh.value;
@@ -910,12 +966,21 @@ function renderEntryTab(){
   const frag = document.createDocumentFragment();
 
   const dateCard = el('div','card');
+  const isNotToday = state.entryDate !== businessDateStr();
+  if(isNotToday){ dateCard.style.borderColor = '#E39A7E'; dateCard.style.background = '#FBEFE9'; }
   dateCard.innerHTML = `<h3>入力する日付</h3>`;
+  if(isNotToday){
+    const warn = document.createElement('div');
+    warn.style.cssText = 'font-size:12.5px;font-weight:700;color:#B3401E;background:#FDE1D0;border-radius:8px;padding:8px 10px;margin-bottom:10px;';
+    warn.textContent = `⚠️ 今日（${businessDateStr()}）ではなく、${state.entryDate} を選択中です`;
+    dateCard.appendChild(warn);
+  }
   const dateInput = el('input');
   dateInput.type = 'date';
   dateInput.value = state.entryDate;
   dateInput.onchange = async (e)=>{
     state.entryDate = e.target.value;
+    saveEntryDate(state.entryDate);
     await loadRecords(monthKeyOf(state.entryDate));
     render();
   };
@@ -942,11 +1007,24 @@ function renderEntryTab(){
 
   const entryCard = el('div','card');
   entryCard.innerHTML = `<h3>${state.entryDate} の成績</h3>
-    <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;">名前をタップすると、その日の着順を入力できます（常連さまが上に表示されます）</div>`;
+    <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">名前をタップすると、その日の着順を入力できます（常連さまが上に表示されます）</div>`;
 
   if(state.players.length === 0){
     entryCard.appendChild(el('div',null,'<p style="font-size:12.5px;color:var(--ink-soft);">先に「選手管理」タブで選手を登録してください</p>'));
   } else {
+    const targetPlayers = state.players.filter(p=>!p.excluded);
+    const enteredCount = targetPlayers.filter(p=>{
+      const days = records[p.id];
+      if(!days || !days[state.entryDate]) return false;
+      const d = days[state.entryDate];
+      return !!(d.first||d.second||d.third||d.tobi||d.yakuman);
+    }).length;
+    const notEnteredCount = targetPlayers.length - enteredCount;
+    const summary = document.createElement('div');
+    summary.style.cssText = 'font-size:12.5px;font-weight:700;color:var(--felt-dark);margin-bottom:10px;';
+    summary.textContent = `入力済み ${enteredCount}名 ／ 未入力 ${notEnteredCount}名`;
+    entryCard.appendChild(summary);
+
     const searchInp = document.createElement('input');
     searchInp.type = 'text'; searchInp.placeholder = '🔍 じゃんネーム・お名前で検索'; searchInp.lang = 'ja'; searchInp.setAttribute('inputmode','search');
     searchInp.style.width = '100%'; searchInp.style.marginBottom = '10px';
@@ -955,42 +1033,70 @@ function renderEntryTab(){
     const listWrap = document.createElement('div');
     entryCard.appendChild(listWrap);
 
-    function gamesThisMonth(p){
-      return calcStats(p.id, records).games;
+    function pointsOf(p){
+      return calcStats(p.id, records).points;
     }
-    function buildGroup(title, list){
+    function lastEntryDate(p){
+      const days = records[p.id];
+      if(!days) return null;
+      const keys = Object.keys(days).filter(k=> (days[k].first||days[k].second||days[k].third||days[k].tobi||days[k].yakuman));
+      if(keys.length===0) return null;
+      return keys.sort().slice(-1)[0];
+    }
+    function buildGroup(title, list, gridMode){
       if(list.length===0) return;
       const groupTitle = document.createElement('div');
       groupTitle.style.cssText = 'font-size:11.5px;font-weight:800;color:var(--felt-dark);margin:14px 0 2px;font-family:\'M PLUS Rounded 1c\',sans-serif;';
       groupTitle.textContent = `${title}（${list.length}名）`;
       listWrap.appendChild(groupTitle);
-      const sorted = list.slice().sort((a,b)=> gamesThisMonth(b) - gamesThisMonth(a));
+      const groupContainer = document.createElement('div');
+      groupContainer.className = gridMode ? 'entry-grid' : 'entry-list-col';
+      listWrap.appendChild(groupContainer);
+      const sorted = list.slice().sort((a,b)=>{
+        const aToday = lastEntryDate(a) === state.entryDate ? 1 : 0;
+        const bToday = lastEntryDate(b) === state.entryDate ? 1 : 0;
+        if(aToday !== bToday) return bToday - aToday; // 本日入力済みを上に
+        return pointsOf(b) - pointsOf(a);
+      });
       sorted.forEach(p=>{
-        const games = gamesThisMonth(p);
-        const hasToday = !!(records[p.id] && records[p.id][state.entryDate]);
+        const points = pointsOf(p);
+        const lastDate = lastEntryDate(p);
         const row = document.createElement('div');
         row.className = 'entry-name-row';
         row.dataset.jan = p.jan;
         row.dataset.real = p.real || '';
         row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 6px;border-bottom:1px solid var(--line);cursor:pointer;';
+        let statusHtml;
+        if(!lastDate){
+          statusHtml = `<span style="font-size:11px;color:var(--ink-soft);">未入力</span>`;
+        } else if(lastDate === state.entryDate){
+          statusHtml = `<span style="font-size:11px;color:#2C6B3F;font-weight:700;">入力済み ✓</span>`;
+        } else {
+          statusHtml = `<span style="font-size:11px;color:#B3401E;font-weight:700;">最終入力：${lastDate}</span>`;
+        }
         row.innerHTML = `
-          <div style="display:flex;align-items:center;gap:6px;min-width:0;">
-            <span style="font-weight:800;font-size:14.5px;">${escapeHtml(p.jan)}</span>
-            ${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}
-            ${games>0?`<span style="font-size:10.5px;color:var(--ink-soft);">今月${games}戦</span>`:''}
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;">
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-weight:800;font-size:14.5px;">${escapeHtml(p.jan)}</span>
+                ${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}
+              </div>
+              ${p.real?`<div style="font-size:10.5px;color:var(--ink-soft);">${escapeHtml(p.real)}</div>`:''}
+            </div>
+            <span style="font-size:10.5px;color:var(--ink-soft);">${points}pt</span>
           </div>
-          <div style="font-size:11px;flex:none;color:${hasToday?'#2C6B3F':'var(--ink-soft)'};font-weight:${hasToday?'700':'400'};">${hasToday?'入力済み ✓':'未入力'}</div>
+          <div style="flex:none;">${statusHtml}</div>
         `;
         row.onclick = ()=> openEntryModal(p, mk);
-        listWrap.appendChild(row);
+        groupContainer.appendChild(row);
       });
     }
     const customers = state.players.filter(p=>!p.boy && !p.excluded);
     const boys = state.players.filter(p=>p.boy);
     const others = state.players.filter(p=>p.excluded && !p.boy);
-    buildGroup('お客さま', customers);
-    buildGroup('BOYS', boys);
-    buildGroup('その他（対象外）', others);
+    buildGroup('お客さま', customers, true);
+    buildGroup('BOYS', boys, true);
+    buildGroup('その他（対象外）', others, false);
 
     searchInp.addEventListener('input', ()=>{
       const q = searchInp.value.trim();
@@ -1053,13 +1159,11 @@ function openEntryModal(p, mk){
     });
   });
 
-  saveBtn.onclick = ()=> runExclusive(async ()=>{
-    // 他の端末での変更を取りこぼさないよう、保存直前に同じ月の最新データを取得し直す
-    let latestRecords = state.monthsData[mk] || {};
-    try{
-      const fresh = await getStoreRetry(recKey(mk), latestRecords);
-      latestRecords = fresh.value;
-    }catch(e){ /* 失敗時は手元のデータでフォールバック */ }
+  saveBtn.onclick = () => {
+    const key = `${mk}:${p.id}:${entryDate}`;
+    if (entrySending[key]) { toast('保存中です。少し待ってください'); return; }
+    entrySending[key] = true;
+
     const vals = {
       first: parseInt(fields.first.value)||0,
       second: parseInt(fields.second.value)||0,
@@ -1067,16 +1171,42 @@ function openEntryModal(p, mk){
       tobi: parseInt(fields.tobi.value)||0,
       yakuman: parseInt(fields.yakuman.value)||0,
     };
-    if(!latestRecords[p.id]) latestRecords[p.id] = {};
-    latestRecords[p.id][entryDate] = vals;
-    state.monthsData[mk] = latestRecords;
-    const ok = await setStore(recKey(mk), latestRecords);
-    if(ok){
-      toast('保存しました 🐰');
-      overlay.remove();
-      render();
-    }
-  });
+
+    // 楽観的に反映：保存の完了を待たず、先にローカルへ書いて画面を進める（体感速度アップ）
+    const prevRecords = JSON.parse(JSON.stringify(state.monthsData[mk] || {}));
+    if(!state.monthsData[mk]) state.monthsData[mk] = {};
+    if(!state.monthsData[mk][p.id]) state.monthsData[mk][p.id] = {};
+    state.monthsData[mk][p.id][entryDate] = vals;
+
+    toast('保存しました 🐰');
+    overlay.remove();
+    render();
+
+    // 裏側で実際の保存を継続（他端末での変更を取りこぼさないよう、最新を取得してからマージして書き込む）
+    (async () => {
+      try {
+        // 最新データの取得。null をダミーの「失敗の目印」として渡すことで、
+        // 取得に失敗したのか・サーバー側が本当に空なのかを区別できるようにする。
+        const fresh = await getStoreRetry(recKey(mk), null);
+        if (fresh.failed || fresh.value === null) {
+          throw new Error('最新データの取得に失敗しました。空データで上書きするのを防ぐため保存を中止します');
+        }
+        const latestRecords = fresh.value;
+        if(!latestRecords[p.id]) latestRecords[p.id] = {};
+        latestRecords[p.id][entryDate] = vals;
+        state.monthsData[mk] = latestRecords;
+        const ok = await setStore(recKey(mk), latestRecords);
+        if(!ok) throw new Error('保存に失敗しました');
+        render(); // 他端末分も含めた最新データを画面に反映
+      } catch(e) {
+        state.monthsData[mk] = prevRecords; // 失敗したときは元に戻す（空データでの上書きは行わない）
+        toast(`⚠️ ${p.jan} さんの保存に失敗しました。通信状態を確認して、もう一度入力してください`);
+        render();
+      } finally {
+        entrySending[key] = false;
+      }
+    })();
+  };
 
   document.body.appendChild(overlay);
   setTimeout(()=> fields.first.focus(), 50);
@@ -1120,6 +1250,7 @@ function renderImportTab(){
   const pBtn = el('button','btn','選手を取り込む');
   pBtn.style.marginTop='10px';
   pBtn.onclick = ()=> runExclusive(async ()=>{
+    if(state.loadWarning){ toast('⚠️ 選手データの読み込みに失敗した状態です。先にページを再読み込みしてください'); return; }
     const jans = pJanTa.value.split('\n').map(s=>s.trim());
     const reals = pRealTa.value.split('\n').map(s=>s.trim());
     // trim trailing empty rows
@@ -1146,6 +1277,63 @@ function renderImportTab(){
   });
   pCard.appendChild(pBtn);
   frag.appendChild(pCard);
+
+  // ---- Player bulk real-name update (match by existing jan, update real only) ----
+  const ruCard = el('div','card');
+  ruCard.innerHTML = `<h3>既存選手の氏名をまとめて更新</h3>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.7;">
+    すでに登録済みのじゃんネームに、あとから氏名だけをまとめて入れたいときに使います。<br>
+    スプレッドシートで「じゃんネーム」の列をコピー →①に貼り付け。続けて「氏名」の列をコピー →②に貼り付け（同じ行の並び順にしてください）。<br>
+    じゃんネームが一致した選手だけ、氏名を上書きします。①にあって選手一覧に無いじゃんネームは更新されません。②が空の行はその選手の氏名を変更しません（消えません）。
+    </div>`;
+  const ruRow = el('div'); ruRow.style.display='flex'; ruRow.style.gap='8px';
+  const ruCol1 = document.createElement('div'); ruCol1.style.flex='1';
+  ruCol1.innerHTML = `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">①じゃんネーム（登録済みのもの）</div>`;
+  const ruJanTa = document.createElement('textarea');
+  ruJanTa.rows = 8; ruJanTa.style.width='100%'; ruJanTa.style.fontSize='12.5px'; ruJanTa.style.fontFamily="'Noto Sans JP',sans-serif";
+  ruJanTa.style.border='1.5px solid var(--line)'; ruJanTa.style.borderRadius='9px'; ruJanTa.style.padding='8px'; ruJanTa.style.background='#FDFAF7';
+  ruJanTa.placeholder = 'ママ\nBワタビィ\nコウ';
+  ruCol1.appendChild(ruJanTa);
+  const ruCol2 = document.createElement('div'); ruCol2.style.flex='1';
+  ruCol2.innerHTML = `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">②氏名</div>`;
+  const ruRealTa = document.createElement('textarea');
+  ruRealTa.rows = 8; ruRealTa.style.width='100%'; ruRealTa.style.fontSize='12.5px'; ruRealTa.style.fontFamily="'Noto Sans JP',sans-serif";
+  ruRealTa.style.border='1.5px solid var(--line)'; ruRealTa.style.borderRadius='9px'; ruRealTa.style.padding='8px'; ruRealTa.style.background='#FDFAF7';
+  ruRealTa.placeholder = '青野里美\n\n田中コウ';
+  ruCol2.appendChild(ruRealTa);
+  ruRow.append(ruCol1, ruCol2);
+  ruCard.appendChild(ruRow);
+
+  const ruBtn = el('button','btn','氏名をまとめて更新する');
+  ruBtn.style.marginTop='10px';
+  ruBtn.onclick = ()=> runExclusive(async ()=>{
+    if(state.loadWarning){ toast('⚠️ 選手データの読み込みに失敗した状態です。先にページを再読み込みしてください'); return; }
+    const jans = ruJanTa.value.split('\n').map(s=>s.trim());
+    const reals = ruRealTa.value.split('\n').map(s=>s.trim());
+    while(jans.length && jans[jans.length-1]==='') jans.pop();
+    if(jans.length===0){ toast('じゃんネームを貼り付けてください'); return; }
+    // 他の端末・タブでの変更を取りこぼさないよう、更新の直前に必ず最新の選手一覧を取得し直す
+    try{
+      const fresh = await getStoreRetry('players', state.players);
+      state.players = fresh.value;
+    }catch(e){ /* 取得に失敗しても手元のデータでフォールバック */ }
+    let updated=0, notFound=0, blankSkipped=0;
+    jans.forEach((jan, i)=>{
+      if(!jan) return;
+      const real = reals[i]||'';
+      const target = state.players.find(p=>p.jan===jan);
+      if(!target){ notFound++; return; }
+      if(!real){ blankSkipped++; return; }
+      target.real = real;
+      updated++;
+    });
+    await setStore('players', state.players);
+    toast(`氏名 ${updated}件 更新（一致なし ${notFound}件／空欄スキップ ${blankSkipped}件）`);
+    ruJanTa.value=''; ruRealTa.value='';
+    render();
+  });
+  ruCard.appendChild(ruBtn);
+  frag.appendChild(ruCard);
 
   // ---- Score bulk import (multi-day, name column + repeating 6-col day blocks) ----
   const sCard = el('div','card');
@@ -1228,9 +1416,23 @@ function renderImportTab(){
       state.players = fresh.value;
     }catch(e){ /* 失敗時は手元のデータでフォールバック */ }
     const byJan = {}; state.players.forEach(p=>byJan[p.jan]=p.id);
-    const touchedMonths = new Set();
     const days = Math.max(1, parseInt(daysInput.value)||1);
     const expectedCols = days*6;
+
+    // 対象となる月を先に洗い出し、書き込みを始める前に全月分のデータ取得を済ませる。
+    // どれか1か月でも取得に失敗したら、空データで上書きしてしまわないよう、ここで中止する。
+    const touchedMonths = new Set();
+    for(let d=0; d<days; d++){ touchedMonths.add(monthKeyOf(addDays(startStr, d))); }
+    const freshByMonth = {};
+    for(const mk of touchedMonths){
+      const fresh = await getStoreRetry(recKey(mk), null);
+      if(fresh.failed || fresh.value === null){
+        toast(`⚠️ ${monthLabel(mk)}のデータ取得に失敗しました。取込を中止しました（何も上書きしていません）。もう一度お試しください`);
+        return;
+      }
+      freshByMonth[mk] = fresh.value;
+    }
+
     let matched=0, unmatched=[];
     for(let i=0;i<jans.length;i++){
       const jan = jans[i];
@@ -1246,12 +1448,7 @@ function renderImportTab(){
         const chunk = cols.slice(d*6, d*6+6);
         const dateStr = addDays(startStr, d);
         const mk = monthKeyOf(dateStr);
-        // 保存直前に毎回最新の月データを取り直す（取りこぼし防止のため、キャッシュがあっても必ず取り直す）
-        if(!touchedMonths.has(mk)){
-          state.monthsData[mk] = await getStore(recKey(mk), {});
-        }
-        touchedMonths.add(mk);
-        const records = state.monthsData[mk];
+        const records = freshByMonth[mk];
         if(!records[pid]) records[pid] = {};
         records[pid][dateStr] = {
           first: num(chunk[1]), second: num(chunk[2]), third: num(chunk[3]),
@@ -1261,9 +1458,28 @@ function renderImportTab(){
       matched++;
     }
     for(const mk of touchedMonths){
-      await setStore(recKey(mk), state.monthsData[mk]);
+      state.monthsData[mk] = freshByMonth[mk];
+      await setStore(recKey(mk), freshByMonth[mk]);
     }
     await refreshKnownMonths();
+
+    // 取込結果のサマリー（日付ごとの入力済み／未入力の人数）を作成
+    const targetPlayers = state.players.filter(p=>!p.excluded);
+    const summaryDates = [];
+    for(let d=0; d<days; d++){
+      const dateStr = addDays(startStr, d);
+      const mk = monthKeyOf(dateStr);
+      const dayRecords = freshByMonth[mk];
+      const enteredCount = targetPlayers.filter(p=>{
+        const rec = dayRecords[p.id] && dayRecords[p.id][dateStr];
+        return !!(rec && (rec.first||rec.second||rec.third||rec.tobi||rec.yakuman));
+      }).length;
+      summaryDates.push({date: dateStr, entered: enteredCount, notEntered: targetPlayers.length - enteredCount});
+    }
+    state.lastImportSummary = {
+      matched, unmatchedCount: unmatched.length, unmatched, dates: summaryDates,
+    };
+
     toast(`${matched}名 × ${days}日分 取り込み${unmatched.length?`（未登録: ${unmatched.join('、')}）`:''}`);
     sJanTa.value=''; sStatsTa.value='';
     updateCheck();
@@ -1271,6 +1487,24 @@ function renderImportTab(){
   });
   sCard.appendChild(sBtn);
   frag.appendChild(sCard);
+
+  if(state.lastImportSummary){
+    const sum = state.lastImportSummary;
+    const sumCard = el('div','card');
+    sumCard.style.borderColor = '#B7D9C4';
+    sumCard.style.background = '#F0F8F3';
+    let html = `<h3 style="color:#2C6B3F;">✅ 取込結果</h3>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;">${sum.matched}名分を取り込みました${sum.unmatchedCount?`（未登録: ${escapeHtml(sum.unmatched.join('、'))}）`:''}</div>`;
+    sum.dates.forEach(d=>{
+      html += `<div style="font-size:13px;font-weight:700;color:var(--felt-dark);margin-top:4px;">${d.date}：入力済み ${d.entered}名 ／ 未入力 ${d.notEntered}名</div>`;
+    });
+    sumCard.innerHTML = html;
+    const closeSumBtn = el('button','btn ghost','閉じる');
+    closeSumBtn.style.marginTop = '10px';
+    closeSumBtn.onclick = ()=>{ state.lastImportSummary = null; render(); };
+    sumCard.appendChild(closeSumBtn);
+    frag.appendChild(sumCard);
+  }
 
   return frag;
 }
@@ -1304,29 +1538,24 @@ function openPlayerDetail(playerId){
   sheet.appendChild(el('div','detail-sub', `${escapeHtml(p.real||'')}　${monthLabel(state.currentMonth)}の成績`));
 
   const grid = el('div','stat-grid');
+  const pointsPerGame = stats.games>0 ? (stats.points/stats.games) : null;
   const boxes = [
     ['P', stats.points],
     ['G数', stats.games],
+    ['1G平均pt', pointsPerGame!==null ? pointsPerGame.toFixed(2)+'pt' : '-'],
     ['平均順位', stats.avgRank!==null ? stats.avgRank.toFixed(2) : '-'],
-    ['トップ率', stats.topRate!==null ? stats.topRate.toFixed(1)+'%' : '-'],
   ];
   boxes.forEach(([l,v])=>{
     grid.appendChild(el('div','stat-box', `<div class="v">${v}</div><div class="l">${l}</div>`));
   });
   sheet.appendChild(grid);
 
-  const recentDays = dayList.filter(d=>d.games>0).slice(-5);
-  const recentGames = recentDays.reduce((s,d)=>s+d.games,0);
-  const recentAvg = recentGames>0
-    ? (recentDays.reduce((s,d)=> s + d.first*1 + d.second*2 + d.third*3, 0) / recentGames)
-    : null;
-
   const grid2 = el('div','stat-grid');
   const boxes2 = [
+    ['トップ率', stats.topRate!==null ? stats.topRate.toFixed(1)+'%' : '-'],
     ['役満回数', stats.yakuman+'回'],
     ['ラス回避率', stats.lastAvoidRate!==null ? stats.lastAvoidRate.toFixed(1)+'%' : '-'],
     ['トビ率', stats.tobiRate!==null ? stats.tobiRate.toFixed(1)+'%' : '-'],
-    [`直近${recentDays.length}日平均`, recentAvg!==null ? recentAvg.toFixed(2)+'位' : '-'],
   ];
   boxes2.forEach(([l,v])=>{
     grid2.appendChild(el('div','stat-box', `<div class="v">${v}</div><div class="l">${l}</div>`));
@@ -1480,34 +1709,12 @@ function renderSettingsTab(){
   btn.onclick = ()=> runExclusive(async ()=>{
     if(!/^\d{3,6}$/.test(inp.value)){ toast('3〜6桁の数字で入力してください'); return; }
     state.pin = inp.value;
-    await setStore('settings', {pin: state.pin, labelMode: state.labelMode});
+    await setStore('settings', {pin: state.pin});
     toast('PINを更新しました');
   });
   card.appendChild(btn);
   frag.appendChild(card);
   inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); btn.click(); } });
-
-  const labelCard = el('div','card');
-  labelCard.innerHTML = `<h3>ランキングの表示文言</h3>
-    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.7;">
-    公開画面の「まんキン」「ポイントランキング」の頭につく言葉を切り替えられます。<br>
-    月の途中は「現在の」、月末で締めた後は「今月の」に切り替える、といった使い方を想定しています（定休日の関係で自動切り替えではなく、手動で切り替える形にしています）。
-    </div>`;
-  const labelRow = el('div','field-row');
-  ['現在の','今月の'].forEach(mode=>{
-    const b = document.createElement('button');
-    b.textContent = mode;
-    b.className = 'btn' + (state.labelMode===mode ? '' : ' ghost');
-    b.onclick = ()=> runExclusive(async ()=>{
-      await setStore('settings', {pin: state.pin, labelMode: mode});
-      state.labelMode = mode;
-      toast(`「${mode}」に切り替えました`);
-      render();
-    });
-    labelRow.appendChild(b);
-  });
-  labelCard.appendChild(labelRow);
-  frag.appendChild(labelCard);
 
   const info = el('div','card');
   info.innerHTML = `<h3>このアプリについて</h3>
