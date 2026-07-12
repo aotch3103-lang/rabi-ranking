@@ -1561,7 +1561,7 @@ function openPlayerDetail(playerId){
   closeBtn.onclick = ()=> overlay.remove();
   head.appendChild(closeBtn);
   sheet.appendChild(head);
-  sheet.appendChild(el('div','detail-sub', `${escapeHtml(p.real||'')}　${monthLabel(state.currentMonth)}の成績`));
+  sheet.appendChild(el('div','detail-sub', `${monthLabel(state.currentMonth)}の成績`));
 
   const grid = el('div','stat-grid');
   const pointsPerGame = stats.games>0 ? (stats.points/stats.games) : null;
