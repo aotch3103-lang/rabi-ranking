@@ -365,6 +365,7 @@ let state = {
   loadWarning: false,
   knownMonths: [],
   monthLoading: false,
+  pointRules: [],
 };
 
 function todayStr(){
@@ -428,7 +429,18 @@ async function loadRecords(mk){
   return state.monthsData[mk];
 }
 
-function calcStats(playerId, records){
+const DEFAULT_POINT_RULE = {first:3, second:1, third:-1, tobi:1};
+// 指定した月に適用すべきポイント係数を返す（「from（適用開始月）」が指定月以前で、一番新しいルールを使う）
+function pointRuleForMonth(mk){
+  const rules = state.pointRules || [];
+  let applicable = null;
+  rules.forEach(r=>{
+    if(r.from <= mk && (!applicable || r.from > applicable.from)) applicable = r;
+  });
+  return applicable || DEFAULT_POINT_RULE;
+}
+function calcStats(playerId, records, rule){
+  rule = rule || DEFAULT_POINT_RULE;
   const days = records[playerId] || {};
   let first=0, second=0, third=0, tobi=0, yakuman=0;
   Object.values(days).forEach(d=>{
@@ -436,7 +448,7 @@ function calcStats(playerId, records){
     tobi += d.tobi||0; yakuman += d.yakuman||0;
   });
   const games = first+second+third;
-  const points = first*3 + second*1 - third*1 + tobi*1;
+  const points = first*rule.first + second*rule.second + third*rule.third + tobi*rule.tobi;
   const avgRank = games>0 ? ((first*1+second*2+third*3)/games) : null;
   const topRate = games>0 ? (first/games*100) : null;
   const rentaiRate = games>0 ? ((first+second)/games*100) : null;
@@ -487,6 +499,7 @@ async function init(){
   state.loadWarning = allFailed && state.players.length===0;
   const settings = (allData && allData.settings) || {pin:'0403'};
   state.pin = settings.pin;
+  try{ state.pointRules = JSON.parse(settings.pointRules || '[]'); }catch(e){ state.pointRules = []; }
   state.knownMonths = (allData && allData.months) || [];
   state.currentMonth = monthKeyOf(todayStr());
   await loadRecords(state.currentMonth);
@@ -566,7 +579,7 @@ function renderPublic(){
   const records = state.monthsData[state.currentMonth] || {};
   const ranked = state.players
     .filter(p=>!p.excluded)
-    .map(p=>({...p, ...calcStats(p.id, records)}))
+    .map(p=>({...p, ...calcStats(p.id, records, pointRuleForMonth(state.currentMonth))}))
     .filter(p=>p.games > 0)
     .sort((a,b)=> b.points - a.points || b.games - a.games);
 
@@ -656,12 +669,25 @@ function footerLink(){
   return d;
 }
 
+function shiftMonthKey(mk, delta){
+  let [y,m] = mk.split('-').map(Number);
+  m += delta;
+  while(m>12){ m-=12; y+=1; }
+  while(m<1){ m+=12; y-=1; }
+  return y+'-'+String(m).padStart(2,'0');
+}
 function getAvailableMonths(){
   const set = new Set([state.currentMonth]);
   set.add(monthKeyOf(todayStr()));
   Object.keys(state.monthsData).forEach(k=>set.add(k));
   (state.knownMonths||[]).forEach(k=>set.add(k));
-  return Array.from(set).sort().reverse();
+  // 公開画面に出すのは「今月＋過去3か月」の直近4か月分だけ。
+  // データ自体はサーバーに残ったままで、表示だけを絞っている。
+  const currentBiz = monthKeyOf(businessDateStr());
+  const oldestAllowed = shiftMonthKey(currentBiz, -3);
+  return Array.from(set)
+    .filter(mk => mk >= oldestAllowed && mk <= currentBiz)
+    .sort().reverse();
 }
 
 function escapeHtml(s){
@@ -1034,7 +1060,7 @@ function renderEntryTab(){
     entryCard.appendChild(listWrap);
 
     function pointsOf(p){
-      return calcStats(p.id, records).points;
+      return calcStats(p.id, records, pointRuleForMonth(mk)).points;
     }
     function lastEntryDate(p){
       const days = records[p.id];
@@ -1514,7 +1540,7 @@ function openPlayerDetail(playerId){
   const p = state.players.find(x=>x.id===playerId);
   if(!p) return;
   const records = state.monthsData[state.currentMonth] || {};
-  const stats = calcStats(playerId, records);
+  const stats = calcStats(playerId, records, pointRuleForMonth(state.currentMonth));
   const days = records[playerId] || {};
   const dayList = Object.keys(days).sort().map(date=>{
     const d = days[date];
@@ -1695,6 +1721,9 @@ function buildRankPieChart(stats){
   return wrap;
 }
 
+async function saveSettings(){
+  return await setStore('settings', {pin: state.pin, pointRules: JSON.stringify(state.pointRules||[])});
+}
 function renderSettingsTab(){
   const frag = document.createDocumentFragment();
   const card = el('div','card');
@@ -1709,12 +1738,72 @@ function renderSettingsTab(){
   btn.onclick = ()=> runExclusive(async ()=>{
     if(!/^\d{3,6}$/.test(inp.value)){ toast('3〜6桁の数字で入力してください'); return; }
     state.pin = inp.value;
-    await setStore('settings', {pin: state.pin});
+    await saveSettings();
     toast('PINを更新しました');
   });
   card.appendChild(btn);
   frag.appendChild(card);
   inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); btn.click(); } });
+
+  // ---- ポイント計算式の変更（来月から適用） ----
+  const currentBiz = monthKeyOf(businessDateStr());
+  const nextMk = shiftMonthKey(currentBiz, 1);
+  const currentRule = pointRuleForMonth(currentBiz);
+  const ruleCard = el('div','card');
+  ruleCard.innerHTML = `<h3>ポイント計算式の変更</h3>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.7;">
+    今すぐには反映されず、必ず「来月の1日から」新しい計算式が使われます。過去の月の順位は変わりません。<br>
+    現在（${monthLabel(currentBiz)}）の計算式：<b>1着 +${currentRule.first}P／2着 +${currentRule.second}P／3着 ${currentRule.third}P／トビ +${currentRule.tobi}P</b>
+    </div>`;
+  const ruleGrid = el('div'); ruleGrid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;';
+  const mkField = (label, val)=>{
+    const wrap = document.createElement('div');
+    const lab = document.createElement('div'); lab.textContent = label; lab.style.cssText='font-size:11px;color:var(--ink-soft);margin-bottom:3px;';
+    const input = document.createElement('input');
+    input.type = 'number'; input.value = val; input.style.width = '100%';
+    wrap.appendChild(lab); wrap.appendChild(input);
+    ruleGrid.appendChild(wrap);
+    return input;
+  };
+  const firstInp = mkField('1着（P）', currentRule.first);
+  const secondInp = mkField('2着（P）', currentRule.second);
+  const thirdInp = mkField('3着（P）', currentRule.third);
+  const tobiInp = mkField('トビ（P）', currentRule.tobi);
+  ruleCard.appendChild(ruleGrid);
+  const ruleBtn = el('button','btn',`${monthLabel(nextMk)}から適用する`);
+  ruleBtn.onclick = ()=> runExclusive(async ()=>{
+    const vals = [firstInp,secondInp,thirdInp,tobiInp].map(i=>Number(i.value));
+    if(vals.some(v=>isNaN(v))){ toast('数字を入力してください'); return; }
+    const newRule = {from: nextMk, first: vals[0], second: vals[1], third: vals[2], tobi: vals[3]};
+    state.pointRules = (state.pointRules||[]).filter(r=>r.from !== nextMk);
+    state.pointRules.push(newRule);
+    await saveSettings();
+    toast(`${monthLabel(nextMk)}からの新しいポイント計算式を保存しました`);
+    render();
+  });
+  ruleCard.appendChild(ruleBtn);
+
+  const futureRules = (state.pointRules||[]).filter(r=>r.from > currentBiz).sort((a,b)=> a.from.localeCompare(b.from));
+  if(futureRules.length){
+    const futureWrap = document.createElement('div');
+    futureWrap.style.cssText = 'margin-top:12px;';
+    futureRules.forEach(r=>{
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:8px 0;border-top:1px solid var(--line);';
+      row.innerHTML = `<span>${monthLabel(r.from)}〜：1着+${r.first}P／2着+${r.second}P／3着${r.third}P／トビ+${r.tobi}P</span>`;
+      const delBtn = el('button','btn ghost small','取り消す');
+      delBtn.onclick = ()=> runExclusive(async ()=>{
+        state.pointRules = state.pointRules.filter(x=>x.from !== r.from);
+        await saveSettings();
+        toast('取り消しました');
+        render();
+      });
+      row.appendChild(delBtn);
+      futureWrap.appendChild(row);
+    });
+    ruleCard.appendChild(futureWrap);
+  }
+  frag.appendChild(ruleCard);
 
   const info = el('div','card');
   info.innerHTML = `<h3>このアプリについて</h3>
