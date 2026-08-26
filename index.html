@@ -477,6 +477,7 @@ let state = {
   monthLoading: false,
   pointRules: [],
   mankinPattern: 'kokushi',
+  boyInPodiumMonths: [],
 };
 
 function todayStr(){
@@ -611,6 +612,7 @@ async function init(){
   const settings = (allData && allData.settings) || {pin:'0403'};
   state.pin = settings.pin;
   try{ state.pointRules = JSON.parse(settings.pointRules || '[]'); }catch(e){ state.pointRules = []; }
+  try{ state.boyInPodiumMonths = JSON.parse(settings.boyInPodiumMonths || '[]'); }catch(e){ state.boyInPodiumMonths = []; }
   state.mankinPattern = (settings.mankinPattern && MANKIN_PATTERNS[settings.mankinPattern]) ? settings.mankinPattern : 'kokushi';
   state.knownMonths = (allData && allData.months) || [];
   state.currentMonth = monthKeyOf(todayStr());
@@ -786,7 +788,8 @@ function renderPublic(){
   }
 
   // podium (top3)：BOYSは表彰台(TOP3)には出さない。ポイントには反映されるので下のリストには通常通り登場する
-  const podiumPlayers = ranked.filter(p=>!p.boy).slice(0,3);
+  const includeBoysInPodium = (state.boyInPodiumMonths||[]).includes(state.currentMonth);
+  const podiumPlayers = ranked.filter(p=> includeBoysInPodium || !p.boy).slice(0,3);
   const podiumIds = new Set(podiumPlayers.map(p=>p.id));
   const restPlayers = ranked.filter(p=>!podiumIds.has(p.id));
 
@@ -1900,7 +1903,12 @@ function buildRankPieChart(stats){
 }
 
 async function saveSettings(){
-  return await setStore('settings', {pin: state.pin, pointRules: JSON.stringify(state.pointRules||[]), mankinPattern: state.mankinPattern||'kokushi'});
+  return await setStore('settings', {
+    pin: state.pin,
+    pointRules: JSON.stringify(state.pointRules||[]),
+    mankinPattern: state.mankinPattern||'kokushi',
+    boyInPodiumMonths: JSON.stringify(state.boyInPodiumMonths||[]),
+  });
 }
 function renderSettingsTab(){
   const frag = document.createDocumentFragment();
@@ -2004,6 +2012,48 @@ function renderSettingsTab(){
   });
   mankinCard.appendChild(mankinSelect);
   frag.appendChild(mankinCard);
+
+  // ---- 表彰台にBOYSを含める月の設定 ----
+  const podiumCard = el('div','card');
+  podiumCard.innerHTML = `<h3>表彰台にBOYSを含める</h3>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.7;">
+    通常、表彰台（TOP3）にはBOYSは選ばれません（ランキング一覧には今まで通り表示されます）。<br>
+    月ごとに、その月だけ表彰台にBOYSを含めるかどうかを切り替えられます。過去の月にもさかのぼって設定できます。
+    </div>`;
+  const podiumRow = el('div','field-row');
+  const podiumMonthSelect = document.createElement('select');
+  podiumMonthSelect.style.cssText = 'flex:1;padding:9px 10px;font-size:13.5px;border:1.5px solid var(--line);border-radius:9px;background:#FDFAF7;';
+  const availableMonthsForSetting = Array.from(new Set([state.currentMonth, ...(state.knownMonths||[]), ...Object.keys(state.monthsData||{})])).sort().reverse();
+  availableMonthsForSetting.forEach(mk=>{
+    const opt = document.createElement('option');
+    opt.value = mk; opt.textContent = monthLabel(mk);
+    if(mk === state.currentMonth) opt.selected = true;
+    podiumMonthSelect.appendChild(opt);
+  });
+  podiumRow.appendChild(podiumMonthSelect);
+  podiumCard.appendChild(podiumRow);
+
+  function renderPodiumToggleBtn(){
+    const mk = podiumMonthSelect.value;
+    const isOn = (state.boyInPodiumMonths||[]).includes(mk);
+    podiumToggleBtn.textContent = isOn ? `${monthLabel(mk)}：含める（タップで外す）` : `${monthLabel(mk)}：含めない（タップで含める）`;
+    podiumToggleBtn.className = 'btn' + (isOn ? '' : ' ghost');
+  }
+  const podiumToggleBtn = el('button','btn','');
+  podiumToggleBtn.style.width = '100%';
+  podiumToggleBtn.onclick = ()=> runExclusive(async ()=>{
+    const mk = podiumMonthSelect.value;
+    const set = new Set(state.boyInPodiumMonths||[]);
+    if(set.has(mk)) set.delete(mk); else set.add(mk);
+    state.boyInPodiumMonths = Array.from(set);
+    await saveSettings();
+    renderPodiumToggleBtn();
+    toast(`${monthLabel(mk)}の設定を更新しました`);
+  });
+  podiumMonthSelect.onchange = renderPodiumToggleBtn;
+  renderPodiumToggleBtn();
+  podiumCard.appendChild(podiumToggleBtn);
+  frag.appendChild(podiumCard);
 
   const info = el('div','card');
   info.innerHTML = `<h3>このアプリについて</h3>
