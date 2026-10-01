@@ -1653,14 +1653,15 @@ function renderImportTab(){
       const num = v => parseInt(v)||0;
       for(let d=0; d<days; d++){
         const chunk = cols.slice(d*6, d*6+6);
+        const first = num(chunk[1]), second = num(chunk[2]), third = num(chunk[3]),
+              tobi = num(chunk[4]), yakuman = num(chunk[5]);
+        // 全部0（未出勤・未入力）の日は記録を作らない（Recordsシートの肥大化を防ぐ）
+        if(first===0 && second===0 && third===0 && tobi===0 && yakuman===0) continue;
         const dateStr = addDays(startStr, d);
         const mk = monthKeyOf(dateStr);
         const records = freshByMonth[mk];
         if(!records[pid]) records[pid] = {};
-        records[pid][dateStr] = {
-          first: num(chunk[1]), second: num(chunk[2]), third: num(chunk[3]),
-          tobi: num(chunk[4]), yakuman: num(chunk[5]),
-        };
+        records[pid][dateStr] = { first, second, third, tobi, yakuman };
       }
       matched++;
     }
