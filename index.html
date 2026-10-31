@@ -615,7 +615,7 @@ async function init(){
   try{ state.boyInPodiumMonths = JSON.parse(settings.boyInPodiumMonths || '[]'); }catch(e){ state.boyInPodiumMonths = []; }
   state.mankinPattern = (settings.mankinPattern && MANKIN_PATTERNS[settings.mankinPattern]) ? settings.mankinPattern : 'kokushi';
   state.knownMonths = (allData && allData.months) || [];
-  state.currentMonth = monthKeyOf(todayStr());
+  state.currentMonth = monthKeyOf(businessDateStr());
   await loadRecords(state.currentMonth);
   render();
 }
@@ -859,7 +859,7 @@ function shiftMonthKey(mk, delta){
 }
 function getAvailableMonths(){
   const set = new Set([state.currentMonth]);
-  set.add(monthKeyOf(todayStr()));
+  set.add(monthKeyOf(businessDateStr()));
   Object.keys(state.monthsData).forEach(k=>set.add(k));
   (state.knownMonths||[]).forEach(k=>set.add(k));
   // 公開画面に出すのは「今月＋過去3か月」の直近4か月分だけ。
