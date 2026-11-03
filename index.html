@@ -541,7 +541,8 @@ async function loadRecords(mk){
   return state.monthsData[mk];
 }
 
-const DEFAULT_POINT_RULE = {first:3, second:1, third:-1, tobi:1};
+// ★yakuman＝役満1回ごとのP、mankin＝その月のまんキンへのボーナスP（どちらも0なら「なし」）
+const DEFAULT_POINT_RULE = {first:3, second:1, third:-1, tobi:1, yakuman:0, mankin:0};
 // 指定した月に適用すべきポイント係数を返す（「from（適用開始月）」が指定月以前で、一番新しいルールを使う）
 function pointRuleForMonth(mk){
   const rules = state.pointRules || [];
@@ -549,24 +550,34 @@ function pointRuleForMonth(mk){
   rules.forEach(r=>{
     if(r.from <= mk && (!applicable || r.from > applicable.from)) applicable = r;
   });
-  return applicable || DEFAULT_POINT_RULE;
+  return Object.assign({}, DEFAULT_POINT_RULE, applicable || {});
 }
-// ★2027年1月から：その月の「まんキン」（いちばん役満を出した人。同じ回数なら全員）に、その月のランキングポイント＋10P
+// ★まんキンボーナス：その月の「まんキン」（いちばん役満を出した人。同じ回数なら全員）に、その月のランキングポイント＋◯P
+//   何Pにするかは、スタッフ用の「設定」→「ポイント計算式の変更」で月ごとに決める（0ならなし）
 //   役満が1回も出ていない月は、まんキンなし（ボーナスもなし）
-const MANKIN_BONUS = { from: '2027-01', points: 10 };
+function mankinPointsFor(mk){ return Number(pointRuleForMonth(mk).mankin)||0; }
+// まんキンの人（その月いちばん役満を出した人。同じ回数なら全員）。ママ・店長・BOYSなど「対象外」の人も含めて決める
+function mankinPlayersFor(mk, records){
+  const list = state.players.map(p=>({...p, ...calcStats(p.id, records, pointRuleForMonth(mk))})).filter(p=>p.games>0);
+  const maxY = Math.max(0, ...list.map(p=>p.yakuman));
+  return { max: maxY, players: maxY>0 ? list.filter(p=>p.yakuman===maxY) : [] };
+}
 function mankinBonusIdsFor(mk, records){
   const ids = new Set();
-  if(!mk || mk < MANKIN_BONUS.from) return ids;
-  const list = state.players.filter(p=>!p.excluded).map(p=>({id:p.id, ...calcStats(p.id, records, pointRuleForMonth(mk))})).filter(p=>p.games>0);
-  const maxY = Math.max(0, ...list.map(p=>p.yakuman));
-  if(maxY > 0) list.filter(p=>p.yakuman===maxY).forEach(p=>ids.add(p.id));
+  if(!mk || mankinPointsFor(mk) <= 0) return ids;
+  mankinPlayersFor(mk, records).players.forEach(p=>ids.add(p.id));
   return ids;
 }
 // まんキンのボーナスも含めた、その月のポイント
 function statsWithBonus(playerId, records, mk){
   const st = calcStats(playerId, records, pointRuleForMonth(mk));
-  if(mankinBonusIdsFor(mk, records).has(playerId)){ st.points += MANKIN_BONUS.points; st.mankinBonus = true; }
+  if(mankinBonusIdsFor(mk, records).has(playerId)){ st.points += mankinPointsFor(mk); st.mankinBonus = mankinPointsFor(mk); }
   return st;
+}
+function ruleText(r){
+  r = Object.assign({}, DEFAULT_POINT_RULE, r||{});
+  const sg = v=> (v<0?'':'+')+v;
+  return `1着${sg(r.first)}P／2着${sg(r.second)}P／3着${sg(r.third)}P／トビ${sg(r.tobi)}P／役満${r.yakuman?sg(r.yakuman)+'P':'なし'}／まんキン${r.mankin?sg(r.mankin)+'P':'なし'}`;
 }
 function calcStats(playerId, records, rule){
   rule = rule || DEFAULT_POINT_RULE;
@@ -577,7 +588,7 @@ function calcStats(playerId, records, rule){
     tobi += d.tobi||0; yakuman += d.yakuman||0;
   });
   const games = first+second+third;
-  const points = first*rule.first + second*rule.second + third*rule.third + tobi*rule.tobi;
+  const points = first*rule.first + second*rule.second + third*rule.third + tobi*rule.tobi + yakuman*(rule.yakuman||0);
   const avgRank = games>0 ? ((first*1+second*2+third*3)/games) : null;
   const topRate = games>0 ? (first/games*100) : null;
   const rentaiRate = games>0 ? ((first+second)/games*100) : null;
@@ -693,12 +704,16 @@ function renderPublic(){
   };
   frag.appendChild(picker);
 
+  // ★その月の計算式に合わせて表示（設定で変えた月も正しく出る）
+  const shownRule = pointRuleForMonth(state.currentMonth);
+  const sgn = v=> v<0 ? '−'+Math.abs(v) : '+'+v;
   const rules = el('div','rules',`
-    <div><b>1着 +3P</b>トップ</div>
-    <div><b>2着 +1P</b>2着</div>
-    <div><b>3着 −1P</b>3着</div>
-    <div><b>トビ +1P</b>飛び賞</div>
-    ${state.currentMonth >= MANKIN_BONUS.from ? '<div><b>まんキン +'+MANKIN_BONUS.points+'P</b>役満王</div>' : ''}
+    <div><b>1着 ${sgn(shownRule.first)}P</b>トップ</div>
+    <div><b>2着 ${sgn(shownRule.second)}P</b>2着</div>
+    <div><b>3着 ${sgn(shownRule.third)}P</b>3着</div>
+    <div><b>トビ ${sgn(shownRule.tobi)}P</b>飛び賞</div>
+    ${shownRule.yakuman ? '<div><b>役満 '+sgn(shownRule.yakuman)+'P</b>1回ごと</div>' : ''}
+    ${shownRule.mankin ? '<div><b>まんキン '+sgn(shownRule.mankin)+'P</b>役満王</div>' : ''}
   `);
   frag.appendChild(rules);
 
@@ -714,15 +729,16 @@ function renderPublic(){
     .filter(p=>!p.excluded)
     .map(p=>{
       const st = {...p, ...calcStats(p.id, records, pointRuleForMonth(state.currentMonth))};
-      if(mankinIds.has(p.id)){ st.points += MANKIN_BONUS.points; st.mankinBonus = true; }
+      if(mankinIds.has(p.id)){ st.points += mankinPointsFor(state.currentMonth); st.mankinBonus = mankinPointsFor(state.currentMonth); }
       return st;
     })
     .filter(p=>p.games > 0)
     .sort((a,b)=> b.points - a.points || b.games - a.games);
 
-  const maxYakuman = Math.max(0, ...ranked.map(p=>p.yakuman));
+  const mkInfo = mankinPlayersFor(state.currentMonth, records); // ★対象外の人も含めてまんキンを決める（ポイント表と同じ）
+  const maxYakuman = mkInfo.max;
   if(maxYakuman > 0){
-    const mankinPlayers = ranked.filter(p=>p.yakuman===maxYakuman);
+    const mankinPlayers = mkInfo.players;
     const mankin = el('div','mankin-card');
     mankin.innerHTML = `
       <div class="mankin-icon">🀄</div>
@@ -847,7 +863,7 @@ function renderPublic(){
     row.innerHTML = `
       <div class="rank-tile">${rank}</div>
       <div class="row-name">
-        <div class="jan">${escapeHtml(p.jan)}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}${p.mankinBonus?'<span class="tag-excl" style="background:#FDEAF2;color:#C2185B;">👑まんキン+'+MANKIN_BONUS.points+'P</span>':''}</div>
+        <div class="jan">${escapeHtml(p.jan)}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}${p.mankinBonus?'<span class="tag-excl" style="background:#FDEAF2;color:#C2185B;">👑まんキン+'+p.mankinBonus+'P</span>':''}</div>
         <div class="sub">${p.games>0 ? `${p.games}戦・平均${p.avgRank.toFixed(2)}位・トップ率${p.topRate.toFixed(1)}%` : '未対局'}</div>
       </div>
       <div class="row-stats">
@@ -1750,7 +1766,8 @@ function openPlayerDetail(playerId){
   const dayList = Object.keys(days).sort().map(date=>{
     const d = days[date];
     const games = (d.first||0)+(d.second||0)+(d.third||0);
-    const pts = (d.first||0)*3 + (d.second||0)*1 - (d.third||0)*1 + (d.tobi||0)*1;
+    const dr = pointRuleForMonth(state.currentMonth);
+    const pts = (d.first||0)*dr.first + (d.second||0)*dr.second + (d.third||0)*dr.third + (d.tobi||0)*dr.tobi + (d.yakuman||0)*(dr.yakuman||0);
     const avg = games>0 ? ((d.first*1+d.second*2+d.third*3)/games) : null;
     return {date, ...d, games, pts, avg};
   });
@@ -1767,7 +1784,7 @@ function openPlayerDetail(playerId){
   head.appendChild(closeBtn);
   sheet.appendChild(head);
   sheet.appendChild(el('div','detail-sub', `${monthLabel(state.currentMonth)}の成績`));
-  if(stats.mankinBonus) sheet.appendChild(el('div','detail-sub', `👑 まんキン（役満${stats.yakuman}回）でボーナス +${MANKIN_BONUS.points}P が入っています`));
+  if(stats.mankinBonus) sheet.appendChild(el('div','detail-sub', `👑 まんキン（役満${stats.yakuman}回）でボーナス +${stats.mankinBonus}P が入っています`));
 
   const grid = el('div','stat-grid');
   const pointsPerGame = stats.games>0 ? (stats.points/stats.games) : null;
@@ -1956,16 +1973,29 @@ function renderSettingsTab(){
   frag.appendChild(card);
   inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); btn.click(); } });
 
-  // ---- ポイント計算式の変更（来月から適用） ----
+  // ---- ポイント計算式の変更（来月以降から適用） ----
   const currentBiz = monthKeyOf(businessDateStr());
-  const nextMk = shiftMonthKey(currentBiz, 1);
+  if(!state.ruleFromMk || state.ruleFromMk <= currentBiz) state.ruleFromMk = shiftMonthKey(currentBiz, 1);
+  const nextMk = state.ruleFromMk;
   const currentRule = pointRuleForMonth(currentBiz);
   const ruleCard = el('div','card');
   ruleCard.innerHTML = `<h3>ポイント計算式の変更</h3>
     <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.7;">
-    今すぐには反映されず、必ず「来月の1日から」新しい計算式が使われます。過去の月の順位は変わりません。<br>
-    現在（${monthLabel(currentBiz)}）の計算式：<b>1着 +${currentRule.first}P／2着 +${currentRule.second}P／3着 ${currentRule.third}P／トビ +${currentRule.tobi}P</b>
+    今すぐには反映されず、選んだ月の1日から新しい計算式が使われます（来月〜6か月先まで選べます）。過去の月の順位は変わりません。<br>
+    現在（${monthLabel(currentBiz)}）の計算式：<b>${ruleText(currentRule)}</b><br>
+    ・役満：役満1回ごとに入るP（0ならなし）<br>
+    ・まんキン：その月いちばん役満を出した人（同じ回数なら全員）に入るボーナスP（0ならなし）
     </div>`;
+  const fromSel = document.createElement('select');
+  fromSel.style.cssText = 'width:100%;margin-bottom:10px;';
+  for(let k=1;k<=6;k++){
+    const mk = shiftMonthKey(currentBiz, k);
+    const o = document.createElement('option'); o.value = mk; o.textContent = monthLabel(mk)+'から適用'; if(mk===nextMk) o.selected = true;
+    fromSel.appendChild(o);
+  }
+  fromSel.onchange = ()=>{ state.ruleFromMk = fromSel.value; render(); };
+  ruleCard.appendChild(fromSel);
+  const baseRule = pointRuleForMonth(nextMk);
   const ruleGrid = el('div'); ruleGrid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;';
   const mkField = (label, val)=>{
     const wrap = document.createElement('div');
@@ -1976,16 +2006,18 @@ function renderSettingsTab(){
     ruleGrid.appendChild(wrap);
     return input;
   };
-  const firstInp = mkField('1着（P）', currentRule.first);
-  const secondInp = mkField('2着（P）', currentRule.second);
-  const thirdInp = mkField('3着（P）', currentRule.third);
-  const tobiInp = mkField('トビ（P）', currentRule.tobi);
+  const firstInp = mkField('1着（P）', baseRule.first);
+  const secondInp = mkField('2着（P）', baseRule.second);
+  const thirdInp = mkField('3着（P）', baseRule.third);
+  const tobiInp = mkField('トビ（P）', baseRule.tobi);
+  const yakuInp = mkField('役満（P／1回ごと）', baseRule.yakuman||0);
+  const mankinInp = mkField('まんキン ボーナス（P）', baseRule.mankin||0);
   ruleCard.appendChild(ruleGrid);
   const ruleBtn = el('button','btn',`${monthLabel(nextMk)}から適用する`);
   ruleBtn.onclick = ()=> runExclusive(async ()=>{
-    const vals = [firstInp,secondInp,thirdInp,tobiInp].map(i=>Number(i.value));
+    const vals = [firstInp,secondInp,thirdInp,tobiInp,yakuInp,mankinInp].map(i=>Number(i.value===''?0:i.value));
     if(vals.some(v=>isNaN(v))){ toast('数字を入力してください'); return; }
-    const newRule = {from: nextMk, first: vals[0], second: vals[1], third: vals[2], tobi: vals[3]};
+    const newRule = {from: nextMk, first: vals[0], second: vals[1], third: vals[2], tobi: vals[3], yakuman: vals[4], mankin: vals[5]};
     state.pointRules = (state.pointRules||[]).filter(r=>r.from !== nextMk);
     state.pointRules.push(newRule);
     await saveSettings();
@@ -2001,7 +2033,7 @@ function renderSettingsTab(){
     futureRules.forEach(r=>{
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:8px 0;border-top:1px solid var(--line);';
-      row.innerHTML = `<span>${monthLabel(r.from)}〜：1着+${r.first}P／2着+${r.second}P／3着${r.third}P／トビ+${r.tobi}P</span>`;
+      row.innerHTML = `<span>${monthLabel(r.from)}〜：${ruleText(r)}</span>`;
       const delBtn = el('button','btn ghost small','取り消す');
       delBtn.onclick = ()=> runExclusive(async ()=>{
         state.pointRules = state.pointRules.filter(x=>x.from !== r.from);
