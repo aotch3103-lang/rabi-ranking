@@ -551,6 +551,23 @@ function pointRuleForMonth(mk){
   });
   return applicable || DEFAULT_POINT_RULE;
 }
+// ★2027年1月から：その月の「まんキン」（いちばん役満を出した人。同じ回数なら全員）に、その月のランキングポイント＋10P
+//   役満が1回も出ていない月は、まんキンなし（ボーナスもなし）
+const MANKIN_BONUS = { from: '2027-01', points: 10 };
+function mankinBonusIdsFor(mk, records){
+  const ids = new Set();
+  if(!mk || mk < MANKIN_BONUS.from) return ids;
+  const list = state.players.filter(p=>!p.excluded).map(p=>({id:p.id, ...calcStats(p.id, records, pointRuleForMonth(mk))})).filter(p=>p.games>0);
+  const maxY = Math.max(0, ...list.map(p=>p.yakuman));
+  if(maxY > 0) list.filter(p=>p.yakuman===maxY).forEach(p=>ids.add(p.id));
+  return ids;
+}
+// まんキンのボーナスも含めた、その月のポイント
+function statsWithBonus(playerId, records, mk){
+  const st = calcStats(playerId, records, pointRuleForMonth(mk));
+  if(mankinBonusIdsFor(mk, records).has(playerId)){ st.points += MANKIN_BONUS.points; st.mankinBonus = true; }
+  return st;
+}
 function calcStats(playerId, records, rule){
   rule = rule || DEFAULT_POINT_RULE;
   const days = records[playerId] || {};
@@ -681,6 +698,7 @@ function renderPublic(){
     <div><b>2着 +1P</b>2着</div>
     <div><b>3着 −1P</b>3着</div>
     <div><b>トビ +1P</b>飛び賞</div>
+    ${state.currentMonth >= MANKIN_BONUS.from ? '<div><b>まんキン +'+MANKIN_BONUS.points+'P</b>役満王</div>' : ''}
   `);
   frag.appendChild(rules);
 
@@ -691,9 +709,14 @@ function renderPublic(){
   }
 
   const records = state.monthsData[state.currentMonth] || {};
+  const mankinIds = mankinBonusIdsFor(state.currentMonth, records);
   const ranked = state.players
     .filter(p=>!p.excluded)
-    .map(p=>({...p, ...calcStats(p.id, records, pointRuleForMonth(state.currentMonth))}))
+    .map(p=>{
+      const st = {...p, ...calcStats(p.id, records, pointRuleForMonth(state.currentMonth))};
+      if(mankinIds.has(p.id)){ st.points += MANKIN_BONUS.points; st.mankinBonus = true; }
+      return st;
+    })
     .filter(p=>p.games > 0)
     .sort((a,b)=> b.points - a.points || b.games - a.games);
 
@@ -806,7 +829,7 @@ function renderPublic(){
       card.style.cursor = 'pointer';
       card.innerHTML = `
         <div class="p-medal">${rankNum}</div>
-        <div class="p-name">${escapeHtml(p.jan)}</div>
+        <div class="p-name">${escapeHtml(p.jan)}${p.mankinBonus?' 👑':''}</div>
         <div class="p-pts">${p.points}<span>P</span></div>
       `;
       card.onclick = ()=> openPlayerDetail(p.id);
@@ -824,7 +847,7 @@ function renderPublic(){
     row.innerHTML = `
       <div class="rank-tile">${rank}</div>
       <div class="row-name">
-        <div class="jan">${escapeHtml(p.jan)}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}</div>
+        <div class="jan">${escapeHtml(p.jan)}${p.boy?'<span class="tag-excl" style="background:#DCE8F5;color:#2E5C8A;">BOYS</span>':''}${p.mankinBonus?'<span class="tag-excl" style="background:#FDEAF2;color:#C2185B;">👑まんキン+'+MANKIN_BONUS.points+'P</span>':''}</div>
         <div class="sub">${p.games>0 ? `${p.games}戦・平均${p.avgRank.toFixed(2)}位・トップ率${p.topRate.toFixed(1)}%` : '未対局'}</div>
       </div>
       <div class="row-stats">
@@ -1241,7 +1264,7 @@ function renderEntryTab(){
     entryCard.appendChild(listWrap);
 
     function pointsOf(p){
-      return calcStats(p.id, records, pointRuleForMonth(mk)).points;
+      return statsWithBonus(p.id, records, mk).points;
     }
     function lastEntryDate(p){
       const days = records[p.id];
@@ -1722,7 +1745,7 @@ function openPlayerDetail(playerId){
   const p = state.players.find(x=>x.id===playerId);
   if(!p) return;
   const records = state.monthsData[state.currentMonth] || {};
-  const stats = calcStats(playerId, records, pointRuleForMonth(state.currentMonth));
+  const stats = statsWithBonus(playerId, records, state.currentMonth);
   const days = records[playerId] || {};
   const dayList = Object.keys(days).sort().map(date=>{
     const d = days[date];
@@ -1744,6 +1767,7 @@ function openPlayerDetail(playerId){
   head.appendChild(closeBtn);
   sheet.appendChild(head);
   sheet.appendChild(el('div','detail-sub', `${monthLabel(state.currentMonth)}の成績`));
+  if(stats.mankinBonus) sheet.appendChild(el('div','detail-sub', `👑 まんキン（役満${stats.yakuman}回）でボーナス +${MANKIN_BONUS.points}P が入っています`));
 
   const grid = el('div','stat-grid');
   const pointsPerGame = stats.games>0 ? (stats.points/stats.games) : null;
