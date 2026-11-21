@@ -42,6 +42,7 @@
   .btn.sub{background:#E8E2CF;color:var(--black);}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--soft);font-size:12.5px;padding:6px 10px;}
   .btn.block{width:100%;}
+  .btn.allin{background:#fff;border:1.5px solid var(--black);color:var(--black);border-radius:999px;padding:7px 14px;font-size:13px;white-space:nowrap;}
   .btn:disabled{opacity:.4;box-shadow:none;}
   .seg{display:flex;background:#E8E2CF;border-radius:12px;padding:4px;gap:4px;}
   .seg button{flex:1;border:none;background:transparent;border-radius:9px;padding:9px 2px;font-size:13.5px;font-weight:800;color:var(--navy);cursor:pointer;}
@@ -49,7 +50,7 @@
   .pickrow{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .pickrow .no{flex:0 0 42px;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--navy);}
   .stepper{display:flex;align-items:center;gap:12px;}
-  .stepper button{width:44px;height:44px;border-radius:50%;border:none;background:var(--black);color:var(--g);font-size:22px;font-weight:800;cursor:pointer;}
+  .stepper button:not(.allin){width:44px;height:44px;border-radius:50%;border:none;background:var(--black);color:var(--g);font-size:22px;font-weight:800;cursor:pointer;}
   .stepper .u{font-family:'M PLUS Rounded 1c';font-weight:800;font-size:26px;min-width:60px;text-align:center;}
   .wallet{display:flex;gap:8px;}
   .wallet div{flex:1;background:var(--black);border-radius:12px;padding:8px;text-align:center;}
@@ -74,6 +75,9 @@
   .result b{font-family:'M PLUS Rounded 1c';font-size:15px;}
   .muted{font-size:12.5px;color:var(--soft);}
   .empty{text-align:center;color:var(--soft);font-size:13px;padding:12px 0;}
+  .rules .rh{background:var(--black);color:var(--g);border-radius:8px;padding:4px 10px;font-weight:800;font-size:13px;margin:10px 0 4px;}
+  .rules .rh:first-of-type{margin-top:0;}
+  .rules .rb{font-size:13px;line-height:1.75;}
   .note{background:#FFF3C4;border-radius:12px;padding:10px 12px;font-size:13px;color:#7A5A00;margin-bottom:10px;}
   .mrow{display:grid;grid-template-columns:1fr 84px 58px 30px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;}
   .mrow input{padding:8px;font-size:15px;}
@@ -223,6 +227,7 @@ function render(loading){
   if (res) h += resultHtml(d, res, rk, mk);
   if (d.phase !== 'ended') h += standingsHtml(rk, mk);
   h += hallHtml(d);
+  h += rulesHtml(d);
   h += '<div class="foot">' + (S.me ? '<a href="#" data-a="logout">' + esc(S.me) + ' からログアウト</a>　' : '') + '<a href="#" data-a="admin">ママの設定</a></div>';
   root.innerHTML = h; bind();
 }
@@ -238,11 +243,11 @@ function crownHtml(res){
 function phaseHtml(d){
   var b, t = '';
   if (d.phase === 'open'){ var left = d.deadline - Number(d.businessDate.slice(8,10)); b = '<span class="badge b-open">受付中</span>'; t = mOf(d.month) + '月' + d.deadline + '日の営業終了まで<br><b>' + (left === 0 ? '今日まで！' : 'あと' + left + '日') + '</b>'; }
-  else if (d.phase === 'closed'){ b = '<span class="badge b-closed">オッズ発表！</span>'; t = 'ほかの人の券は月末にオープン'; }
-  else if (d.phase === 'ended'){ b = '<span class="badge b-ended">結果発表</span>'; t = '全員の券をオープン！'; }
+  else if (d.phase === 'closed'){ b = '<span class="badge b-closed">オッズ発表！</span>'; t = 'ほかの人のうさ券は月末にオープン'; }
+  else if (d.phase === 'ended'){ b = '<span class="badge b-ended">結果発表</span>'; t = '全員のうさ券をオープン！'; }
   else { b = '<span class="badge b-before">まだ始まっていません</span>'; }
   var who = Object.keys(d.bettors || {}).length;
-  return '<div class="card"><div class="phase">' + b + '<div class="t">' + t + '</div></div><div class="muted" style="margin-top:8px">参加：' + who + '人／券：' + d.betCount + '枚</div></div>';
+  return '<div class="card"><div class="phase">' + b + '<div class="t">' + t + '</div></div><div class="muted" style="margin-top:8px">参加：' + who + '人／うさ券：' + d.betCount + '枚</div></div>';
 }
 function loginHtml(d){
   if (!d.members.length) return '<div class="card"><div class="empty">まだ部員がいません。ママの設定から登録してね</div></div>';
@@ -251,9 +256,9 @@ function loginHtml(d){
 }
 function myHtml(d){
   var used = S.myBets.reduce(function(s,b){ return s + b.points; }, 0);
-  var h = '<div class="card"><h3>🎫 ' + esc(S.me) + 'の券</h3>';
-  if (d.phase === 'open') h += '<div class="wallet"><div><div class="l">のこりポイント</div><div class="v">' + (d.startPoints - used) + 'P</div></div><div><div class="l">買った券</div><div class="v">' + S.myBets.length + ' / ' + d.maxTickets + '</div></div></div>';
-  h += S.myBets.length ? S.myBets.map(function(b){ return tkHtml(b, {cancel: d.phase === 'open'}); }).join('') : '<div class="empty">まだ券を買っていません</div>';
+  var h = '<div class="card"><h3>🎫 ' + esc(S.me) + 'のうさ券</h3>';
+  if (d.phase === 'open') h += '<div class="wallet"><div><div class="l">のこりポイント</div><div class="v">' + (d.startPoints - used) + 'P</div></div><div><div class="l">買ったうさ券</div><div class="v">' + S.myBets.length + ' / ' + d.maxTickets + '</div></div></div>';
+  h += S.myBets.length ? S.myBets.map(function(b){ return tkHtml(b, {cancel: d.phase === 'open'}); }).join('') : '<div class="empty">まだうさ券を買っていません</div>';
   return h + '</div>';
 }
 function tkHtml(b, o){
@@ -263,13 +268,13 @@ function tkHtml(b, o){
 }
 function buyHtml(d, rk){
   var used = S.myBets.reduce(function(s,b){ return s + b.points; }, 0), left = d.startPoints - used;
-  if (S.myBets.length >= d.maxTickets || left <= 0) return '<div class="card"><div class="empty">今月の券は全部使いました。月末の結果を楽しみにね！</div></div>';
+  if (S.myBets.length >= d.maxTickets || left <= 0) return '<div class="card"><div class="empty">今月のうさ券は全部使いました。月末の結果を楽しみにね！</div></div>';
   var f = S.form; if (f.points > left) f.points = left;
   var rkPos = {}; rk.forEach(function(p, i){ rkPos[p.id] = i + 1; });
   var mk = mankinOf(S.month, S.rec), ym = {}; S.players.forEach(function(p){ ym[p.id] = stats(p.id, S.rec, ruleFor(S.month)).yakuman; });
   var list = candidates(f.type, S.month).slice().sort(function(a,b){ return f.type === 'mankin' ? (ym[b.id] - ym[a.id]) || a.jan.localeCompare(b.jan,'ja') : ((rkPos[a.id]||999) - (rkPos[b.id]||999)) || a.jan.localeCompare(b.jan,'ja'); });
   var cnt = f.type === 'san' ? 3 : 1;
-  var h = '<div class="card"><h3>✍️ 券を買う</h3><div class="seg">' + ['tan','san','mankin'].map(function(t){ return '<button data-type="' + t + '" class="' + (f.type === t ? 'on' : '') + '">' + TYPE_NAME[t] + '</button>'; }).join('') + '</div>';
+  var h = '<div class="card"><h3>✍️ うさ券を買う</h3><div class="seg">' + ['tan','san','mankin'].map(function(t){ return '<button data-type="' + t + '" class="' + (f.type === t ? 'on' : '') + '">' + TYPE_NAME[t] + '</button>'; }).join('') + '</div>';
   h += '<label class="f">' + (f.type === 'tan' ? '1位になる人' : f.type === 'san' ? '1位・2位・3位を順番どおり' : '今月のまんキン（いちばん役満を出す人）') + '</label>';
   for (var i = 0; i < cnt; i++){
     var others = f.picks.slice(0, cnt).filter(function(x, j){ return j !== i && x; });
@@ -277,14 +282,14 @@ function buyHtml(d, rk){
       var tag = f.type === 'mankin' ? (ym[p.id] ? '（役満' + ym[p.id] + '回）' : '') : (rkPos[p.id] ? '（今' + rkPos[p.id] + '位）' : '');
       return '<option value="' + esc(p.id) + '" ' + (f.picks[i] === p.id ? 'selected' : '') + ' ' + (others.indexOf(p.id) >= 0 ? 'disabled' : '') + '>' + esc(p.jan) + tag + '</option>'; }).join('') + '</select></div>';
   }
-  h += '<label class="f">賭けるポイント（のこり' + left + 'P）</label><div class="stepper"><button data-a="minus">−</button><div class="u">' + f.points + 'P</div><button data-a="plus">＋</button><button class="btn ghost" data-a="all">ぜんぶ</button></div>';
+  h += '<label class="f">賭けるポイント（のこり' + left + 'P）</label><div class="stepper"><button data-a="minus">−</button><div class="u">' + f.points + 'P</div><button data-a="plus">＋</button><button class="btn allin" data-a="all">ぜんぶ賭ける</button></div>';
   var ready = f.picks.slice(0, cnt).every(Boolean);
-  return h + '<button class="btn pink block" style="margin-top:14px" data-a="buy" ' + (ready ? '' : 'disabled') + '>この券を買う</button><div class="muted" style="margin-top:8px">ほかの人の券は、締め切りまで秘密。オッズは締め切りのあとに発表されるよ。</div></div>';
+  return h + '<button class="btn pink block" style="margin-top:14px" data-a="buy" ' + (ready ? '' : 'disabled') + '>このうさ券を買う</button><div class="muted" style="margin-top:8px">ほかの人のうさ券は、締め切りまで秘密。オッズは締め切りのあとに発表されるよ。</div></div>';
 }
 function oddsHtml(d){
   var bets = d.bets || [];
   if (!bets.length) return '<div class="card"><h3>📣 オッズ発表</h3><div class="empty">今月はだれも賭けていません</div></div>';
-  var h = '<div class="card"><h3>📣 オッズ発表！</h3><div class="muted" style="margin-bottom:6px">当たったら、賭けたポイントの何倍になるか（だれが賭けたかは月末に発表）</div>';
+  var h = '<div class="card"><h3>📣 オッズ発表！</h3><div class="note">オッズは賭け方ごとに別々。当たったら、その賭け方の箱のポイントだけをもらえるよ（ほかの賭け方で外れたポイントは回ってこない）。だれが賭けたかは月末に発表！</div>';
   ['tan','san','mankin'].forEach(function(t){
     var bs = bets.filter(function(b){ return b.type === t; }); if (!bs.length) return;
     var total = bs.reduce(function(s,b){ return s + b.points; }, 0), st = {}, nm = {};
@@ -299,7 +304,7 @@ function resultHtml(d, res, rk, mk){
     '<div class="mk"><small>まんキン</small><b>' + (mk.players.length ? mk.players.map(function(p){ return esc(p.jan); }).join('・') : 'なし') + '</b></div></div>';
   h += '<table><tr><th>順位</th><th>部員</th><th class="n">最後のポイント</th></tr>' + res.list.map(function(x, i){
     return '<tr class="' + (x.final === res.list[0].final ? 'top1' : '') + '"><td>' + (i+1) + '</td><td>' + esc(x.name) + '</td><td class="n">' + f1(x.final) + 'P</td></tr>'; }).join('') + '</table>';
-  h += '<div style="font-weight:800;margin:12px 0 2px;color:var(--navy)">全員の券</div>' + (d.bets.length ? d.bets.map(function(b){ return tkHtml(b, {name: true, pay: res.pay[b.id]}); }).join('') : '<div class="empty">券はありません</div>');
+  h += '<div style="font-weight:800;margin:12px 0 2px;color:var(--navy)">全員のうさ券</div>' + (d.bets.length ? d.bets.map(function(b){ return tkHtml(b, {name: true, pay: res.pay[b.id]}); }).join('') : '<div class="empty">うさ券はありません</div>');
   h += '<div class="muted" style="margin-top:8px">当たりがいなかった賭け方のポイントは、なくなります。まんキンが2人以上のときは、配当を山分けしています。</div>';
   return h + '</div>';
 }
@@ -309,6 +314,16 @@ function standingsHtml(rk, mk){
   h += '<table><tr><th>順位</th><th>じゃんネーム</th><th class="n">ポイント</th></tr>' + rk.slice(0, 10).map(function(p, i){ return '<tr><td>' + (i+1) + '</td><td>' + esc(p.jan) + '</td><td class="n">' + p.points + 'P</td></tr>'; }).join('') + '</table>';
   h += '<div class="muted" style="margin-top:8px">いまのまんキン：' + (mk.players.length ? mk.players.map(function(p){ return esc(p.jan); }).join('・') + '（役満' + mk.max + '回）' : 'まだなし') + '</div>';
   return h + '</div>';
+}
+function rulesHtml(d){
+  var sec = function(t, body){ return '<div class="rh">' + t + '</div><div class="rb">' + body + '</div>'; };
+  return '<div class="card rules"><h3>📖 ルール</h3>' +
+    sec('ポイントとうさ券', '毎月1日に全員' + d.startPoints + 'Pからスタート。うさ券は1か月' + d.maxTickets + '枚まで。1枚に何Pでも賭けられるよ。') +
+    sec('賭け方は3つ', '単勝：ラビ王ランキングの1位を当てる<br>3連単：1位→2位→3位を順番どおり当てる<br>まんキン単勝：その月いちばん役満を出す人を当てる（ママ・店長・BOYSも入るよ）') +
+    sec('配当のしくみ', '賭け方ごとに別々の箱。当たった人は、自分の賭け方の箱のポイントだけを、賭けたポイントの割合で分けるよ。ほかの賭け方で外れたポイントは回ってこない。だれも当たらなかった箱のポイントはなくなるよ。まんキンが2人以上のときは、箱を人数で分けて山分け。') +
+    sec('オッズと発表', '締め切り（ふだんは15日の営業終了）までは、ほかの人のうさ券は秘密。締め切りの次の日にオッズ発表。月末に全員のうさ券をオープン！') +
+    sec('優勝とボーナス', '月末にポイントがいちばん多い人が優勝（1回以上賭けた人だけ）。ボーナス2,000円を優勝した人で山分け。ママとめぐは名誉の優勝だよ。') +
+    '</div>';
 }
 function hallHtml(d){
   var hall = d.hall || []; if (!hall.length) return '';
@@ -338,7 +353,7 @@ function bind(){
   root.querySelectorAll('[data-pick]').forEach(function(el){ el.onchange = function(){ S.form.picks[+el.getAttribute('data-pick')] = el.value; render(); }; });
   root.querySelectorAll('[data-cancel]').forEach(function(el){ el.onclick = function(){
     var b = S.myBets.filter(function(x){ return x.id === el.getAttribute('data-cancel'); })[0];
-    ask(TYPE_NAME[b.type] + '「' + b.pickNames + '」' + b.points + 'Pの券を取り消す？', function(){ act(function(){ return post({action: 'cancelBet', name: S.me, pin: S.pin, id: b.id}).then(function(){ toast('取り消しました'); return load(); }); }); });
+    ask(TYPE_NAME[b.type] + '「' + b.pickNames + '」' + b.points + 'Pのうさ券を取り消す？', function(){ act(function(){ return post({action: 'cancelBet', name: S.me, pin: S.pin, id: b.id}).then(function(){ toast('取り消しました'); return load(); }); }); });
   }; });
   root.querySelectorAll('[data-mdel]').forEach(function(el){ el.onclick = function(){ keepMembers(); S.admin.members.splice(+el.getAttribute('data-mdel'), 1); render(); }; });
 }
@@ -370,7 +385,7 @@ function onAct(a){
     var cnt = f.type === 'san' ? 3 : 1, picks = f.picks.slice(0, cnt), names = picks.map(nameOf);
     ask(TYPE_NAME[f.type] + '「' + names.join('→') + '」に' + f.points + 'P賭ける？', function(){ act(function(){
       return post({action: 'addBet', month: S.month, name: S.me, pin: S.pin, type: f.type, picks: picks, pickNames: names, points: f.points}).then(function(){
-        S.form = {type: f.type, picks: ['','',''], points: 1}; toast('券を買ったよ！ 結果は月末に🎉'); return load();
+        S.form = {type: f.type, picks: ['','',''], points: 1}; toast('うさ券を買ったよ！ 結果は月末に🎉'); return load();
       });
     }); });
   }
