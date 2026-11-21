@@ -306,7 +306,7 @@ function resultHtml(d, res, rk, mk){
 function standingsHtml(rk, mk){
   var h = '<div class="card"><h3>📊 いまのランキング</h3>';
   if (!rk.length) return h + '<div class="empty">まだ成績がありません</div></div>';
-  h += '<table><tr><th>順位</th><th>じゃんネーム</th><th class="n">ポイント</th></tr>' + rk.slice(0, 8).map(function(p, i){ return '<tr><td>' + (i+1) + '</td><td>' + esc(p.jan) + '</td><td class="n">' + p.points + 'P</td></tr>'; }).join('') + '</table>';
+  h += '<table><tr><th>順位</th><th>じゃんネーム</th><th class="n">ポイント</th></tr>' + rk.slice(0, 10).map(function(p, i){ return '<tr><td>' + (i+1) + '</td><td>' + esc(p.jan) + '</td><td class="n">' + p.points + 'P</td></tr>'; }).join('') + '</table>';
   h += '<div class="muted" style="margin-top:8px">いまのまんキン：' + (mk.players.length ? mk.players.map(function(p){ return esc(p.jan); }).join('・') + '（役満' + mk.max + '回）' : 'まだなし') + '</div>';
   return h + '</div>';
 }
