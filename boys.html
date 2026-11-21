@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BOYS予想部</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{ --pink:#E6187E; --pink-d:#AD1263; --pink-s:#FDE6F1; --gray:#595757; --cream:#FFF8FB; --gold:#E8B94A; --gold-s:#FFF6DC; --line:#F6D8E7; --ink:#4A4A4A; --soft:#9B9B9B; --navy:#2B3A67; --navy-s:#E9EDF7; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:radial-gradient(circle at 0% 0%,var(--navy-s) 0%,transparent 45%),radial-gradient(circle at 100% 20%,var(--pink-s) 0%,transparent 40%),var(--cream);min-height:100vh;}
+  .app{max-width:520px;margin:0 auto;padding:14px 12px 60px;}
+  h1,h3,.r{font-family:'M PLUS Rounded 1c',sans-serif;}
+  .head{text-align:center;}
+  .head img{height:62px;}
+  .head h1{margin:2px 0 0;font-size:26px;font-weight:800;color:var(--navy);letter-spacing:.06em;}
+  .head h1 span{color:var(--pink);}
+  .head .sub{font-size:12px;color:var(--soft);}
+  .monthbar{display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0;}
+  .monthbar button{border:none;background:#fff;box-shadow:0 4px 12px rgba(43,58,103,.12);width:34px;height:34px;border-radius:50%;color:var(--navy);font-size:15px;cursor:pointer;}
+  .monthbar button:disabled{opacity:.3;}
+  .monthbar .m{font-family:'M PLUS Rounded 1c';font-weight:800;font-size:18px;min-width:120px;text-align:center;}
+  .card{background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:0 6px 20px rgba(43,58,103,.07);padding:14px;margin-bottom:12px;}
+  .card h3{margin:0 0 10px;font-size:15.5px;color:var(--navy);}
+  .crown{background:linear-gradient(135deg,#FFF6DC,#FFE7F2);border:2px solid var(--gold);text-align:center;}
+  .crown .l{font-size:12.5px;font-weight:800;color:#8A6A10;}
+  .crown .n{font-family:'M PLUS Rounded 1c';font-weight:800;font-size:26px;color:var(--pink-d);margin:2px 0;}
+  .crown .p{font-size:14px;font-weight:700;color:var(--navy);}
+  .crown .b{font-size:12px;color:#8A6A10;margin-top:4px;}
+  .phase{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .badge{padding:5px 12px;border-radius:999px;font-size:13px;font-weight:800;font-family:'M PLUS Rounded 1c';white-space:nowrap;}
+  .b-open{background:#E7F7EC;color:#1F8A47;} .b-closed{background:var(--gold-s);color:#8A6A10;} .b-ended{background:var(--pink-s);color:var(--pink);} .b-before{background:#eee;color:#888;}
+  .phase .t{font-size:12.5px;color:var(--soft);text-align:right;}
+  .phase .t b{color:var(--ink);font-size:14.5px;}
+  label.f{display:block;font-size:12.5px;font-weight:700;color:var(--navy);margin:12px 0 5px;}
+  input[type=text],input[type=password],input[type=number],select{width:100%;padding:11px 12px;font-size:16px;border:1.5px solid var(--line);border-radius:11px;background:#FDFAF7;font-family:'Noto Sans JP';color:var(--ink);}
+  .btn{border:none;border-radius:13px;padding:11px 14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans JP';}
+  .btn.main{background:var(--navy);color:#fff;box-shadow:0 5px 14px rgba(43,58,103,.25);}
+  .btn.pink{background:var(--pink);color:#fff;}
+  .btn.sub{background:var(--navy-s);color:var(--navy);}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--soft);font-size:12.5px;padding:6px 10px;}
+  .btn.block{width:100%;}
+  .btn:disabled{opacity:.4;box-shadow:none;}
+  .seg{display:flex;background:var(--navy-s);border-radius:12px;padding:4px;gap:4px;}
+  .seg button{flex:1;border:none;background:transparent;border-radius:9px;padding:9px 2px;font-size:13.5px;font-weight:800;color:var(--navy);cursor:pointer;}
+  .seg button.on{background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);color:var(--pink);}
+  .pickrow{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .pickrow .no{flex:0 0 42px;font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--navy);}
+  .stepper{display:flex;align-items:center;gap:12px;}
+  .stepper button{width:44px;height:44px;border-radius:50%;border:none;background:var(--navy-s);color:var(--navy);font-size:22px;font-weight:800;cursor:pointer;}
+  .stepper .u{font-family:'M PLUS Rounded 1c';font-weight:800;font-size:26px;min-width:60px;text-align:center;}
+  .wallet{display:flex;gap:8px;}
+  .wallet div{flex:1;background:var(--navy-s);border-radius:12px;padding:8px;text-align:center;}
+  .wallet .l{font-size:11.5px;color:var(--navy);font-weight:700;}
+  .wallet .v{font-family:'M PLUS Rounded 1c';font-weight:800;font-size:22px;color:var(--navy);}
+  .tk{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13.5px;}
+  .tk .ty{flex:0 0 auto;font-size:11px;font-weight:800;padding:3px 7px;border-radius:7px;background:var(--navy-s);color:var(--navy);}
+  .tk .ty.san{background:var(--gold-s);color:#8A6A10;} .tk .ty.mankin{background:var(--pink-s);color:var(--pink);}
+  .tk .mid{flex:1;min-width:0;} .tk .who{font-weight:800;} .tk .pk{word-break:break-all;}
+  .tk .pt{font-weight:800;white-space:nowrap;text-align:right;}
+  .tk .pay{color:var(--pink);}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{font-size:11.5px;color:var(--soft);font-weight:500;text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);}
+  td{padding:7px 6px;border-bottom:1px dashed var(--line);}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
+  .odds{font-family:'M PLUS Rounded 1c';font-weight:800;color:var(--navy);}
+  .top1 td{background:#FFF9E8;font-weight:800;}
+  .result{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .result div{border:2px solid var(--line);border-radius:12px;padding:6px 10px;text-align:center;min-width:76px;}
+  .result div.mk{border-color:var(--pink);}
+  .result small{display:block;font-size:10.5px;color:var(--soft);font-weight:700;}
+  .result b{font-family:'M PLUS Rounded 1c';font-size:15px;}
+  .muted{font-size:12.5px;color:var(--soft);}
+  .empty{text-align:center;color:var(--soft);font-size:13px;padding:12px 0;}
+  .note{background:var(--gold-s);border-radius:12px;padding:10px 12px;font-size:13px;color:#7A5A00;margin-bottom:10px;}
+  .mrow{display:grid;grid-template-columns:1fr 84px 58px 30px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;}
+  .mrow input{padding:8px;font-size:15px;}
+  .mrow label{display:flex;align-items:center;gap:3px;justify-content:center;}
+  .foot{text-align:center;margin-top:18px;font-size:12px;} .foot a{color:var(--soft);}
+  .overlay{position:fixed;inset:0;background:rgba(20,25,45,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;}
+  .dlg{background:#fff;border-radius:18px;padding:18px 16px;max-width:380px;width:100%;}
+  .dlg .m{font-weight:700;line-height:1.7;white-space:pre-line;text-align:center;margin-bottom:14px;}
+  .dlg .bs{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:999px;font-size:13.5px;z-index:60;max-width:90%;text-align:center;}
+  .loading{text-align:center;color:var(--soft);padding:40px 0;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><img id="logo" alt="ドラパン"><h1>BOYS<span>予想部</span></h1><div class="sub">ラビ王ランキングの1〜3位とまんキンを予想しよう</div></div>
+  <div id="root"><div class="loading">読み込んでいます…</div></div>
+</div>
+<script>
+// ▼▼▼ 設定（BOYS予想部のGASをデプロイしたら、URLをここに貼り付けてください） ▼▼▼
+var BOYS_GAS_URL = 'https://script.google.com/macros/s/AKfycbwHmdZUpU4cLDbLD94Mz_-0tRArWQ2RA12Ku-_yIGuK_v4nrV_4LGauaB-PfkwuB2ngtA/exec';
+// ▲▲▲ 設定 ▲▲▲
+var RANK_GAS_URL = 'https://script.google.com/macros/s/AKfycbztrm6f5EyVF_BeX-TfWlNBytpHcABgDrtOBCv0xahaPgYvhWO-XbjVNU3UlrdNLIVwHg/exec';
+var BONUS_YEN = 2000;
+var TYPE_NAME = {tan: '単勝', san: '3連単', mankin: 'まんキン単勝'};
+document.getElementById('logo').src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAADMCAMAAADtYnmsAAAAwFBMVEXW1tbg4uGgoaL1kb7j4+OZmZmztLRfYGHyXqDOzs9/gIGtra6+vsBVVVV/f/+0tOm+vsAAAP+/v8K/wcEAAAD+/v7tHXpWV1n4+/iHiIn06e5mZ2ioqaq4ubruIX10dXfxVJvzd67vOov4ttS/v7/uKYHa2tzU1NT71eaVlZf1iLn3psrMzMzwR5L2mcPIyMn8/PyqqqryZqX6zeFdXmD5xNx/f3/W1tZNTlDJycrn5+j19fV+foHW1ta5ubrFxcWeEc6cAAAAQHRSTlNnHfH/lQWp///Z/2bvAwIFkgFcjAD///4H/v/+/e3//v////8E/8T+//3//wX///srA////v8CqfmsTk3+ktGU9NLrIQAADS5JREFUeNrtnQmXoroSgLF1epmZu7z3UEPYBJtRUFxw6b39///qRRIRISRh7z7HOueee71tzEdRqapUQpDkbyhSqdZgPp8XaYeagXag12f2XBdK+YGmoEEH/fPaO/SOEOJ6A+Gd6R0+XlGTf0Cz0Ki71UF3FdPV9JcV+izUP0DKXT3pmvtTUfQDarZvEhrI4ENTtkMk262p9VaiNrLq6co2bDd8v/kAMmgOei13Pt3hWRT9DfBNFCG+6RfNPjuFDFsqqOdP8znW+1DV/nC1hr7wpKvxVs/mJyhCXQQa7Du/zeGlPCtPHGqwB09uotXQRLoGjUDPwUHBet6qqhpRv4A5u9WZGTXbEuoH0AENQK/3QCM96pPJUiNKf3af5B8MZvlJO6lXW04mOm72rEn5DaQItPwv7tCc9I8CtTsMozGGFRq6Ov7W9uYhbDZR8Gc0hkHt0ECea3FmJBq2EVVfPWb0v39cLfGVbjVIWk1MYlZyp25osAZ/wt7U3/1IiFMwP7Na7eUHk7iZc6ulijUP/trXDL2WX/F9Vvox0fG4cqXOI63RI5BuiAnFW+GBqb3Kj7WbB76td8t4930yyHSq30P/U8d2r8B4o0moanXZwEDEtnDZfR/iYaW+AMpYXIMnMzEMYqpW9boHIgCrsKc7/bJ7orUh8mAgrWgJ3wh1mWiErdrtgXmt0B35yT0GFhMm+j8ZyA2KfKlQ+ElMPtkG3x/lINcKjXzHrUrt/2QgSipYIEXjEfeeulB8pepNZw1qhH6U35ahn1qm+o8MJG3ReBRs9XQbbB/6KyuWVgDdwcqZpAGIgbw/gYsQFyna7WddqCuBdZ3mAV7MTGiIXcRyFR+Le2TRKs1zxGxKXYJ6vQe+oUq/n61qKT6LWp8UrWU3yev0CkLTCbCqt9plBqRnKzqCrjm46AzoPg7w7sfZhc3lHg7gN8wW+aYCUt7EA99rvc9QtfmwinQ9Xx8UhqLJSFSecnnqfNBzElrUDASSAumdUwq0Biudpeh+X2kCGusNZiBgizdvT3cbyAeFGsAT0C9NQPeZDEOXJHvoXxolu0vdm0ag3zOhiUckEED+CM1pq/fbh1YyGXC0MG9BaNSPnVuTaU79fuhbftYKvedBY8f7jGcjQCbD0OV8//0F1KnpW4UDQXzYf4/ZxBrgaJg9DImjrtM89uvVzZYRW872sSWBmXgTyLlI9XOVJzmViiSmLM2RBMTF3kPbMp308SKP0M/6m1wjtD5kxZZL/zFHvoN7jdic0Bj4p03oyH/8mAOu74hBt6ppYh8IQ37VeL7jy0CfZiOygO8g327CphkBLgrl5gEAvu84XaK+2tcNzXJ5Z/sAQMA6MPT7bX1++uTyOBykBCPLocPj3JbQ5dUZEVHV41MVUJ6Jjfrthm/SRNP1JkwHhQ9NjPoWT9wVpkn3w8pkvdDgSQSa5NCKgP2fEqZWU9PYbJUI26SbSE25M5d41WbImtE2PwngQJNJ11DApL/EHPGi7Ctg/g1Cq5x7voxWkzleupkSQi+cqPJGF4ygOV76VFavExpN+lwRPwYjoxa7J24v1wJXtbW8tFHzxmG4lnentVg1PcvvE7TQ1dVe6hXT9PJOLLQ0Wp/mObKT++CNw0ag0UaTd35if0r0+N+D7w0sXzySHRA8p0Bqvrwk5VTaqXehKJolLquEzrukXxB6KwgtZvt6vdDyD7Jiq4s5alfoa3pnX6d5oGj7IZJRn1JqTeSGKP/WuzaOAnkvY0GfZqyi6RJoBprnPqAp4mSwx8uZLhXaWSM09RODJsUo0NTOGqHknmdEhdZrS+xheufwHHe0qbrIOMwbDwtA7+WPd6HwMnEV3lfIAu8BVL7FbQ8u5W+ylZGnRQEhaW5n37nsYl8Kek57UGG1rAqaXP1bOoSxH5CQWHuHwzAFVgkhRUilPDRZSZeSPazCZfX13/mhj5cqSdIvTdcSYgplnXyBp52cCdG1X6jjIppGy9rSg+YqyjBDuCNR0KRp8lNxtc8/Kzmj0p59QdKnqw6fh9milYXWGD/+PFRN/SNja7OU9WjHh24O2VLaqG84HYRbdEAOTX9ovF8sr2md24V7kGkruRJ953Cc+bjxnyJu+YHo0n9ZvdD1X0AIGpy2SKPRpriujnbwUwSWd3l96g+jxwxcRY2oKdNHibGygsx2WQVaocsh87VnDaQfGZBoDvrFJQ60LeT4lv3b9D5UiRIIyerwndZvVQj1TSc1601D/5Al/OiN229ZyEMe6SSQBv1LaNZRv5D9LpPUcwYS7aED9Uso+uTINSFot5rUogIXEu5QUHrJaE6DVqpJ4ioQXGH4kxyJV+gr9BX6Cn2FvkJ/WWjozWKfxrNvAb0wgvOHne3Drw8NZ/bAHpMWcDca2DP4RaCn45Tsjnr1gpE9GAzse2vXny6se//4YRQsYk03YzHZVA0NA8NJiGGhb42PxKH4Y/Sl6MMZemPZjpjY1rRa6GkEF4kRgnXxB9s7djj1B8bxL8G597E/EJfRtFJopFHjEnngjMNbgDiNgeHhrwXogzHwizGjDhaVQnvpHjDadHT85GA3B+/Dv519CfqrkUPTA69S6CDdgRX+YebYwcgZYOip74wCOwa9cAaD1qDhKKuDsbeBcOYTTXtjCHdBwLrW5qA36XGITfp0UfEG8GzSozahZ2nL9KcCASIXtHGpiNLQizS0vROCNnIwh56/OmiL5lS7i6TMpgLtsqkvmEtDT+m32UiJ70GRhlRxEm3LQu9sYW0tEpfr+baQ+EEyzSoLPXaE7TI1PqeCUnmW1xUfThcOoM3UFOaxzHEypZ2JyA5WDu0Xhd5ZvmOIiD3qwmqhx04xaLjwCzu80tBeDmcbH4iekyccJh1PSegcIcLwGDk4h9qqEnrqi3dsjwuGwyjXrQhaPLQMnG6hZjVAU8dhcviHlmDHzXLmlMhLS0PPBC3TCS4Sv7zQ9rhKaIptOv4oJd4YJufCuWRUpcujhBbDmsKUpEslg1zeo1tlcKGVPIRqjLs8JY90plUKmmLSglnRxhtRxRYYhiWhLb75ZRcnqUIbov6mUmhKGSAol3TSfGhQaZZHy0utchsMKGpwZpVCI7Wkqnjlav00XziqNp9eUMIAv+QBx2huvqH/zeNPLctCz9KTUIv3fNMsrLQbdkD1MmMrJV1YLTTcpITDvAuigWZ78HssyR1L0oaRkdl/UWgSBzG2IVbyaxsal9GN0WyMJ1vFPU2D0GGpEk9Sre8CDUNF4wWfkP9bQIfrW9Y5aSlecWoOGke7ADv443/ew5ahF6mgsAhXN2OCXYfd3ew8O5ydh+u4FOEvRVcDTSklBBmlHMO2jdBNe6jKRJ2+OLywWhH0zKblZjBrieJIjZgdgbJOjdAedd2FUcrxF8d83xBZFaoN2qLO6zYZk27HDzaUmxOTbgPQFJVa1IK7EYRjFOVVkLm65TUAnZ4khdlQwEi32fWaJqDTa4lkHCbl7JrZNeJFA9ABdQadnjvFslEmNG/1tApoSqEpgLSqSMwreDmKpLVAZ4zDtNHEColdVkVpQ62MVAtNmUOjkQTTftDexEvUWV7aDy9taiWrT7NKoT1qbXZKNxquffg7unuJ3aYqoOmhZWozPRn0bIrXQ5txyN2wDOPyBsTqHxVAU8pCR2im88CLn14ywfPGp/l86j7FG1cATVlBOeZpHsukuZKyjvg0uAJoSjyc0fUvnvWnW1e7Wwx6VH9MiYeUmgGqkXkU6VoOq+5ddm18twhs6nZFCrQz6k4TWz5GNn1BnF2GLLmOaNlGRs2Qvj/Bv9hOPTKKrSSWgs7YeRmaQcamipi3DYtkhRblStWnbca+Hzp0zN3m2h8bVLXxaufTFUWwAvYGCphnC2RizawEtMUMw7QNe/EgkWvVNuF3ikNnTFv9cfZ+zji01cqCPk2TqAQzYy36xIbUfQ7mZNWvODQ1TbNnjHWkC4c7Kq7oiqH9C8/kGYw56/2g+Ia+Ks3DGCWKLJ6RWrOLAMRt2t9VN92aJj0eZekntb/qbD4bf2AYxZjLuLxFXI+Ob9FqWePAyYriYsHF96aVTmxhpEf0yM1smrXUaUVbCxJPq+ysEU/uvU3ls/ExTiQXO2aiDHddnG/uxHYisLa3XB/tu0Jfoa/QV+grdOvQnS8DDX+GJ6k8iGj6Rugc1QaEnHX9yj+zBgi9SaTf3JlGOv+gnehII7P9I43wiy2XAtBz9JLO54oOeexXcEQkOlH7B/+YrvXqU/0KVk3efotOEAX8A9F+kNOa0Zt8W7QQSN68/n5IH6hNgf4POL1oG73tviXsSXSYoy529JwMOm/kpedI267WgrjR+ZO61BE7mTB+NGHLokm0AzeljINYXyNdtym6RD1OW8p6rfgr94jQ2kXVJfrBplLmAbKdg9sqtnrzR8o4tpxx7K0M/qdpitqKKJr+0JMzDpBlHHt7PMRw1ZGWeguy/NVZAfTW7wLnT+c8CL9qmRc8NBus9+0A79esF5dK8jeUK/QVmiH/B5r5iJfrH7QwAAAAAElFTkSuQmCC";
+
+/* ---------- 通信 ---------- */
+function getJson(url, params){
+  return fetch(url + '?' + new URLSearchParams(params).toString()).then(function(r){ return r.json(); }).then(function(d){ if (d && d.error) throw new Error(d.error); return d; });
+}
+function post(data){
+  return fetch(BOYS_GAS_URL, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(data)})
+    .then(function(r){ return r.json(); }).then(function(d){ if (d && d.error) throw new Error(d.error); return d; });
+}
+
+/* ---------- 日付 ---------- */
+function businessDate(){ var d = new Date(); if (d.getHours() < 6) d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
+function shiftMonth(mk, n){ var a = mk.split('-').map(Number), y = a[0], m = a[1] + n; while (m < 1){ m += 12; y--; } while (m > 12){ m -= 12; y++; } return y + '-' + ('0'+m).slice(-2); }
+function mLabel(mk){ var a = mk.split('-'); return a[0] + '年' + Number(a[1]) + '月'; }
+function mOf(mk){ return Number(mk.split('-')[1]); }
+
+/* ---------- ランキングの計算（ランキング画面と同じ決め方） ---------- */
+var DEFAULT_RULE = {first:3, second:1, third:-1, tobi:1, yakuman:0, mankin:0};
+function ruleFor(mk){ var a = null; (S.pointRules||[]).forEach(function(r){ if (r.from <= mk && (!a || r.from > a.from)) a = r; }); return Object.assign({}, DEFAULT_RULE, a || {}); }
+function stats(pid, rec, rule){
+  var f=0,s=0,t=0,tb=0,y=0; var days = rec[pid] || {};
+  Object.keys(days).forEach(function(k){ var d = days[k]; f+=d.first||0; s+=d.second||0; t+=d.third||0; tb+=d.tobi||0; y+=d.yakuman||0; });
+  return {games: f+s+t, yakuman: y, points: f*rule.first + s*rule.second + t*rule.third + tb*rule.tobi + y*(rule.yakuman||0)};
+}
+function mankinOf(mk, rec){
+  var rule = ruleFor(mk);
+  var all = S.players.map(function(p){ return Object.assign({}, p, stats(p.id, rec, rule)); }).filter(function(p){ return p.games > 0; });
+  var maxY = Math.max.apply(null, [0].concat(all.map(function(p){ return p.yakuman; })));
+  return {max: maxY, players: maxY > 0 ? all.filter(function(p){ return p.yakuman === maxY; }) : []};
+}
+function rankingOf(mk, rec){
+  var rule = ruleFor(mk), mp = Number(rule.mankin) || 0, mk2 = mankinOf(mk, rec);
+  var ids = {}; if (mp > 0) mk2.players.forEach(function(p){ ids[p.id] = 1; });
+  var boys = (S.boyMonths||[]).indexOf(mk) >= 0;
+  return S.players.filter(function(p){ return !p.excluded; }).map(function(p){
+    var st = Object.assign({}, p, stats(p.id, rec, rule)); if (ids[p.id]) st.points += mp; return st;
+  }).filter(function(p){ return p.games > 0; }).sort(function(a,b){ return b.points - a.points || b.games - a.games; })
+    .filter(function(p){ return boys || !p.boy; });
+}
+function candidates(type, mk){
+  if (type === 'mankin') return S.players.slice();
+  var boys = (S.boyMonths||[]).indexOf(mk) >= 0;
+  return S.players.filter(function(p){ return !p.excluded && (boys || !p.boy); });
+}
+var nameOf = function(id){ var p = S.players.filter(function(x){ return x.id === id; })[0]; return p ? p.jan : '？'; };
+function f1(v){ return (Math.floor(v * 10 + 1e-9) / 10).toFixed(1).replace(/\.0$/, ''); }
+
+/* ---------- 結果の計算（取り分0%、同着は山分け、当たりなしはポイントなし） ---------- */
+function settle(bets, rk, mk){
+  var win = {tan: rk[0] ? [rk[0].id] : [], san: rk.length >= 3 ? [rk.slice(0,3).map(function(p){ return p.id; }).join('-')] : [], mankin: mk.players.map(function(p){ return p.id; })};
+  var pay = {};
+  ['tan','san','mankin'].forEach(function(t){
+    var bs = bets.filter(function(b){ return b.type === t; });
+    var total = bs.reduce(function(s,b){ return s + b.points; }, 0);
+    var stake = {}; bs.forEach(function(b){ stake[b.picks] = (stake[b.picks]||0) + b.points; });
+    var hit = win[t].filter(function(k){ return stake[k] > 0; });
+    bs.forEach(function(b){ pay[b.id] = hit.indexOf(b.picks) >= 0 ? Math.floor(b.points / stake[b.picks] * (total / hit.length) * 10 + 1e-9) / 10 : 0; });
+  });
+  var board = {};
+  bets.forEach(function(b){ var x = board[b.name] || (board[b.name] = {name: b.name, spent: 0, got: 0}); x.spent += b.points; x.got += pay[b.id]; });
+  var list = Object.keys(board).map(function(n){ var x = board[n]; x.final = Math.round((S.data.startPoints - x.spent + x.got) * 10) / 10; return x; })
+    .sort(function(a,b){ return b.final - a.final; });
+  var best = list.length ? list[0].final : null;
+  var winners = list.filter(function(x){ return x.final === best; });
+  var each = winners.length ? Math.floor(BONUS_YEN / winners.length) : 0;
+  var bonus = winners.map(function(w){ var m = S.data.members.filter(function(x){ return x.name === w.name; })[0]; return {name: w.name, yen: m && m.noBonus ? 0 : each, honor: !!(m && m.noBonus)}; });
+  return {win: win, pay: pay, list: list, winners: winners, bonus: bonus, each: each};
+}
+
+/* ---------- 状態 ---------- */
+var S = {month: businessDate().slice(0,7), thisMonth: businessDate().slice(0,7), players: [], pointRules: [], boyMonths: [], data: null, rec: {}, me: null, pin: '', myBets: [],
+  form: {type: 'tan', picks: ['','',''], points: 1}, view: 'main', admin: null, adminPin: '', err: ''};
+try { var sv = JSON.parse(sessionStorage.getItem('boys-yoso-me') || 'null'); if (sv){ S.me = sv.name; S.pin = sv.pin; } } catch(e){}
+
+function load(){
+  S.err = ''; render(true);
+  var p1 = S.players.length ? Promise.resolve(null) : getJson(RANK_GAS_URL, {action: 'getAll'});
+  return Promise.all([p1, getJson(RANK_GAS_URL, {action: 'getRecords', month: S.month}), getJson(BOYS_GAS_URL, {action: 'getMonth', month: S.month})])
+    .then(function(r){
+      if (r[0]){
+        S.players = r[0].players || []; var st = r[0].settings || {};
+        try{ S.pointRules = JSON.parse(st.pointRules || '[]'); }catch(e){}
+        try{ S.boyMonths = JSON.parse(st.boyInPodiumMonths || '[]'); }catch(e){}
+      }
+      S.rec = (r[1] && r[1].records) || {}; S.data = r[2];
+      if (S.me) return post({action: 'login', month: S.month, name: S.me, pin: S.pin}).then(function(d){ S.myBets = d.bets; }).catch(function(){ logout(); });
+    })
+    .catch(function(e){ console.error(e); S.err = BOYS_GAS_URL.indexOf('http') === 0 ? '読み込めませんでした。少し待ってから、もう一度ためしてね' : 'boys.html の BOYS_GAS_URL に、GASのURLを貼り付けてください'; })
+    .then(function(){ render(); });
+}
+function logout(){ S.me = null; S.pin = ''; S.myBets = []; try{ sessionStorage.removeItem('boys-yoso-me'); }catch(e){} }
+
+/* ---------- 表示 ---------- */
+var root = document.getElementById('root');
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function toast(m){ var t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 2600); }
+function ask(m, yes){
+  var ov = document.createElement('div'); ov.className = 'overlay';
+  ov.innerHTML = '<div class="dlg"><div class="m"></div><div class="bs"><button class="btn sub" data-n>やめる</button><button class="btn main" data-y>はい</button></div></div>';
+  ov.querySelector('.m').textContent = m;
+  ov.querySelector('[data-n]').onclick = function(){ ov.remove(); };
+  ov.querySelector('[data-y]').onclick = function(){ ov.remove(); yes(); };
+  document.body.appendChild(ov);
+}
+var busy = false;
+function act(fn){ if (busy) return; busy = true; Promise.resolve().then(fn).catch(function(e){ toast(e.message || 'うまくいきませんでした'); }).then(function(){ busy = false; }); }
+
+function render(loading){
+  var h = '<div class="monthbar"><button data-a="prev">◀</button><div class="m">' + mLabel(S.month) + '</div><button data-a="next" ' + (S.month >= S.thisMonth ? 'disabled' : '') + '>▶</button></div>';
+  if (loading){ root.innerHTML = h + '<div class="loading">読み込んでいます…</div>'; bind(); return; }
+  if (S.err){ root.innerHTML = h + '<div class="card"><div class="empty">' + esc(S.err) + '</div><button class="btn sub block" data-a="reload">もう一度読み込む</button></div>'; bind(); return; }
+  if (S.view === 'admin'){ root.innerHTML = h + adminHtml(); bind(); return; }
+  var d = S.data, rk = rankingOf(S.month, S.rec), mk = mankinOf(S.month, S.rec);
+  var res = d.phase === 'ended' && d.bets ? settle(d.bets, rk, mk) : null;
+  if (res) h += crownHtml(res);
+  h += phaseHtml(d);
+  if (d.phase === 'open') h += S.me ? myHtml(d) + buyHtml(d, rk) : loginHtml(d);
+  else if (S.me) h += myHtml(d);
+  else if (d.phase !== 'ended') h += loginHtml(d);
+  if (d.phase === 'closed') h += oddsHtml(d);
+  if (res) h += resultHtml(d, res, rk, mk);
+  if (d.phase !== 'ended') h += standingsHtml(rk, mk);
+  h += hallHtml(d);
+  h += '<div class="foot">' + (S.me ? '<a href="#" data-a="logout">' + esc(S.me) + ' からログアウト</a>　' : '') + '<a href="#" data-a="admin">ママの設定</a></div>';
+  root.innerHTML = h; bind();
+}
+function crownHtml(res){
+  if (!res.winners.length) return '<div class="card crown"><div class="l">今月のポイントゲッター</div><div class="n">なし</div><div class="b">だれも賭けなかったので、ボーナスはありません</div></div>';
+  var names = res.winners.map(function(w){ return esc(w.name); }).join('・');
+  var paid = res.bonus.filter(function(b){ return b.yen > 0; });
+  var honor = res.bonus.filter(function(b){ return b.honor; });
+  var btxt = paid.length ? 'ボーナス：' + paid.map(function(b){ return esc(b.name) + ' ' + b.yen.toLocaleString() + '円'; }).join('・') : '';
+  if (honor.length) btxt += (btxt ? '／' : '') + honor.map(function(b){ return esc(b.name); }).join('・') + 'は名誉の優勝';
+  return '<div class="card crown"><div class="l">👑 ' + mOf(S.month) + '月のポイントゲッター</div><div class="n">' + names + '</div><div class="p">' + f1(res.winners[0].final) + 'P</div><div class="b">' + btxt + '</div></div>';
+}
+function phaseHtml(d){
+  var b, t = '';
+  if (d.phase === 'open'){ var left = d.deadline - Number(d.businessDate.slice(8,10)); b = '<span class="badge b-open">受付中</span>'; t = mOf(d.month) + '月' + d.deadline + '日の営業終了まで<br><b>' + (left === 0 ? '今日まで！' : 'あと' + left + '日') + '</b>'; }
+  else if (d.phase === 'closed'){ b = '<span class="badge b-closed">オッズ発表！</span>'; t = 'ほかの人の券は月末にオープン'; }
+  else if (d.phase === 'ended'){ b = '<span class="badge b-ended">結果発表</span>'; t = '全員の券をオープン！'; }
+  else { b = '<span class="badge b-before">まだ始まっていません</span>'; }
+  var who = Object.keys(d.bettors || {}).length;
+  return '<div class="card"><div class="phase">' + b + '<div class="t">' + t + '</div></div><div class="muted" style="margin-top:8px">参加：' + who + '人／券：' + d.betCount + '枚</div></div>';
+}
+function loginHtml(d){
+  if (!d.members.length) return '<div class="card"><div class="empty">まだ部員がいません。ママの設定から登録してね</div></div>';
+  return '<div class="card"><h3>🔑 部員ログイン</h3><select id="lname"><option value="">名前をえらぶ</option>' + d.members.map(function(m){ return '<option>' + esc(m.name) + '</option>'; }).join('') + '</select>' +
+    '<input id="lpin" type="password" inputmode="numeric" maxlength="4" placeholder="4けたの番号" style="margin-top:8px"><button class="btn main block" style="margin-top:10px" data-a="login">ログイン</button></div>';
+}
+function myHtml(d){
+  var used = S.myBets.reduce(function(s,b){ return s + b.points; }, 0);
+  var h = '<div class="card"><h3>🎫 ' + esc(S.me) + 'の券</h3>';
+  if (d.phase === 'open') h += '<div class="wallet"><div><div class="l">のこりポイント</div><div class="v">' + (d.startPoints - used) + 'P</div></div><div><div class="l">買った券</div><div class="v">' + S.myBets.length + ' / ' + d.maxTickets + '</div></div></div>';
+  h += S.myBets.length ? S.myBets.map(function(b){ return tkHtml(b, {cancel: d.phase === 'open'}); }).join('') : '<div class="empty">まだ券を買っていません</div>';
+  return h + '</div>';
+}
+function tkHtml(b, o){
+  var right = o.pay !== undefined ? (o.pay > 0 ? '<span class="pay">＋' + f1(o.pay) + 'P</span>' : '<span class="muted">はずれ</span>') + '<div class="muted" style="font-weight:500">' + b.points + 'P賭け</div>' : b.points + 'P';
+  return '<div class="tk"><span class="ty ' + b.type + '">' + TYPE_NAME[b.type] + '</span><div class="mid">' + (o.name ? '<div class="who">' + esc(b.name) + '</div>' : '') + '<div class="pk">' + esc(b.pickNames) + '</div></div><div class="pt">' + right +
+    (o.cancel ? '<div><button class="btn ghost" data-cancel="' + esc(b.id) + '">取消</button></div>' : '') + '</div></div>';
+}
+function buyHtml(d, rk){
+  var used = S.myBets.reduce(function(s,b){ return s + b.points; }, 0), left = d.startPoints - used;
+  if (S.myBets.length >= d.maxTickets || left <= 0) return '<div class="card"><div class="empty">今月の券は全部使いました。月末の結果を楽しみにね！</div></div>';
+  var f = S.form; if (f.points > left) f.points = left;
+  var rkPos = {}; rk.forEach(function(p, i){ rkPos[p.id] = i + 1; });
+  var mk = mankinOf(S.month, S.rec), ym = {}; S.players.forEach(function(p){ ym[p.id] = stats(p.id, S.rec, ruleFor(S.month)).yakuman; });
+  var list = candidates(f.type, S.month).slice().sort(function(a,b){ return f.type === 'mankin' ? (ym[b.id] - ym[a.id]) || a.jan.localeCompare(b.jan,'ja') : ((rkPos[a.id]||999) - (rkPos[b.id]||999)) || a.jan.localeCompare(b.jan,'ja'); });
+  var cnt = f.type === 'san' ? 3 : 1;
+  var h = '<div class="card"><h3>✍️ 券を買う</h3><div class="seg">' + ['tan','san','mankin'].map(function(t){ return '<button data-type="' + t + '" class="' + (f.type === t ? 'on' : '') + '">' + TYPE_NAME[t] + '</button>'; }).join('') + '</div>';
+  h += '<label class="f">' + (f.type === 'tan' ? '1位になる人' : f.type === 'san' ? '1位・2位・3位を順番どおり' : '今月のまんキン（いちばん役満を出す人）') + '</label>';
+  for (var i = 0; i < cnt; i++){
+    var others = f.picks.slice(0, cnt).filter(function(x, j){ return j !== i && x; });
+    h += '<div class="pickrow">' + (cnt > 1 ? '<div class="no">' + (i+1) + '位</div>' : '') + '<select data-pick="' + i + '"><option value="">えらぶ</option>' + list.map(function(p){
+      var tag = f.type === 'mankin' ? (ym[p.id] ? '（役満' + ym[p.id] + '回）' : '') : (rkPos[p.id] ? '（今' + rkPos[p.id] + '位）' : '');
+      return '<option value="' + esc(p.id) + '" ' + (f.picks[i] === p.id ? 'selected' : '') + ' ' + (others.indexOf(p.id) >= 0 ? 'disabled' : '') + '>' + esc(p.jan) + tag + '</option>'; }).join('') + '</select></div>';
+  }
+  h += '<label class="f">賭けるポイント（のこり' + left + 'P）</label><div class="stepper"><button data-a="minus">−</button><div class="u">' + f.points + 'P</div><button data-a="plus">＋</button><button class="btn ghost" data-a="all">ぜんぶ</button></div>';
+  var ready = f.picks.slice(0, cnt).every(Boolean);
+  return h + '<button class="btn pink block" style="margin-top:14px" data-a="buy" ' + (ready ? '' : 'disabled') + '>この券を買う</button><div class="muted" style="margin-top:8px">ほかの人の券は、締め切りまで秘密。オッズは締め切りのあとに発表されるよ。</div></div>';
+}
+function oddsHtml(d){
+  var bets = d.bets || [];
+  if (!bets.length) return '<div class="card"><h3>📣 オッズ発表</h3><div class="empty">今月はだれも賭けていません</div></div>';
+  var h = '<div class="card"><h3>📣 オッズ発表！</h3><div class="muted" style="margin-bottom:6px">当たったら、賭けたポイントの何倍になるか（だれが賭けたかは月末に発表）</div>';
+  ['tan','san','mankin'].forEach(function(t){
+    var bs = bets.filter(function(b){ return b.type === t; }); if (!bs.length) return;
+    var total = bs.reduce(function(s,b){ return s + b.points; }, 0), st = {}, nm = {};
+    bs.forEach(function(b){ st[b.picks] = (st[b.picks]||0) + b.points; nm[b.picks] = b.pickNames; });
+    h += '<div style="font-weight:800;margin:10px 0 4px;color:var(--navy)">' + TYPE_NAME[t] + '（合計' + total + 'P）</div><table>' + Object.keys(st).sort(function(a,b){ return st[b] - st[a]; }).map(function(k){
+      return '<tr><td>' + esc(nm[k]) + '</td><td class="n">' + st[k] + 'P</td><td class="n"><span class="odds">' + f1(total / st[k]) + '倍</span></td></tr>'; }).join('') + '</table>';
+  });
+  return h + '</div>';
+}
+function resultHtml(d, res, rk, mk){
+  var h = '<div class="card"><h3>🏁 ' + mOf(S.month) + '月の結果</h3><div class="result">' + rk.slice(0,3).map(function(p, i){ return '<div><small>' + (i+1) + '位</small><b>' + esc(p.jan) + '</b></div>'; }).join('') +
+    '<div class="mk"><small>まんキン</small><b>' + (mk.players.length ? mk.players.map(function(p){ return esc(p.jan); }).join('・') : 'なし') + '</b></div></div>';
+  h += '<table><tr><th>順位</th><th>部員</th><th class="n">最後のポイント</th></tr>' + res.list.map(function(x, i){
+    return '<tr class="' + (x.final === res.list[0].final ? 'top1' : '') + '"><td>' + (i+1) + '</td><td>' + esc(x.name) + '</td><td class="n">' + f1(x.final) + 'P</td></tr>'; }).join('') + '</table>';
+  h += '<div style="font-weight:800;margin:12px 0 2px;color:var(--navy)">全員の券</div>' + (d.bets.length ? d.bets.map(function(b){ return tkHtml(b, {name: true, pay: res.pay[b.id]}); }).join('') : '<div class="empty">券はありません</div>');
+  h += '<div class="muted" style="margin-top:8px">当たりがいなかった賭け方のポイントは、なくなります。まんキンが2人以上のときは、配当を山分けしています。</div>';
+  return h + '</div>';
+}
+function standingsHtml(rk, mk){
+  var h = '<div class="card"><h3>📊 いまのランキング</h3>';
+  if (!rk.length) return h + '<div class="empty">まだ成績がありません</div></div>';
+  h += '<table><tr><th>順位</th><th>じゃんネーム</th><th class="n">ポイント</th></tr>' + rk.slice(0, 8).map(function(p, i){ return '<tr><td>' + (i+1) + '</td><td>' + esc(p.jan) + '</td><td class="n">' + p.points + 'P</td></tr>'; }).join('') + '</table>';
+  h += '<div class="muted" style="margin-top:8px">いまのまんキン：' + (mk.players.length ? mk.players.map(function(p){ return esc(p.jan); }).join('・') + '（役満' + mk.max + '回）' : 'まだなし') + '</div>';
+  return h + '</div>';
+}
+function hallHtml(d){
+  var hall = d.hall || []; if (!hall.length) return '';
+  return '<div class="card"><h3>🏆 歴代のポイントゲッター</h3><table>' + hall.map(function(x){ return '<tr><td>' + mLabel(x.month) + '</td><td>' + esc((x.winners||[]).join('・') || 'なし') + '</td><td class="n">' + (x.points != null ? f1(x.points) + 'P' : '') + '</td></tr>'; }).join('') + '</table></div>';
+}
+
+/* ---------- ママの設定 ---------- */
+function adminHtml(){
+  if (!S.admin) return '<div class="card"><h3>⚙️ ママの設定</h3><div class="muted">ラビ王ランキングと同じ暗証番号を入れてね</div><input id="apin" type="password" inputmode="numeric" style="margin-top:8px"><button class="btn main block" style="margin-top:10px" data-a="aunlock">ひらく</button></div><div class="foot"><a href="#" data-a="back">もどる</a></div>';
+  var a = S.admin, d = S.data;
+  var h = '<div class="card"><h3>👥 部員</h3><div class="mrow muted"><span>名前</span><span>4けたの番号</span><span>名誉のみ</span><span></span></div>';
+  h += a.members.map(function(m, i){ return '<div class="mrow"><input data-mn="' + i + '" value="' + esc(m.name) + '" placeholder="名前"><input data-mp="' + i + '" value="' + esc(m.pin) + '" inputmode="numeric" maxlength="4" placeholder="0000"><label><input type="checkbox" data-mb="' + i + '" ' + (m.noBonus ? 'checked' : '') + '></label><button class="btn ghost" data-mdel="' + i + '">✕</button></div>'; }).join('');
+  h += '<button class="btn sub block" data-a="madd">＋ 部員を足す</button><div class="muted" style="margin:6px 0">「名誉のみ」にチェックした人は、優勝してもボーナスなし（ママ・めぐ）</div><button class="btn main block" data-a="msave">部員を保存</button></div>';
+  var dl = a.deadlines[S.month] || 15;
+  h += '<div class="card"><h3>📅 ' + mOf(S.month) + '月の締め切り</h3><div class="muted">いつもは15日。お試しの月などは変えられるよ（その日の営業終了まで）</div><div style="display:flex;gap:8px;margin-top:8px"><input id="dlday" type="number" min="1" max="31" value="' + dl + '"><button class="btn main" data-a="dlsave" style="white-space:nowrap">日にする</button></div></div>';
+  if (d.phase === 'ended' && d.bets){
+    var res = settle(d.bets, rankingOf(S.month, S.rec), mankinOf(S.month, S.rec));
+    h += '<div class="card"><h3>🏆 ' + mOf(S.month) + '月の結果を確定</h3><div class="muted">ランキングの成績を全部入れ終わってから押してね。歴代のポイントゲッターに残ります。</div><div style="margin:8px 0;font-weight:800">' + (res.winners.length ? res.winners.map(function(w){ return esc(w.name); }).join('・') + '（' + f1(res.winners[0].final) + 'P）' : '優勝なし') + '</div><button class="btn pink block" data-a="hall">この結果で確定する</button></div>';
+  }
+  return h + '<div class="foot"><a href="#" data-a="back">もどる</a></div>';
+}
+
+/* ---------- 操作 ---------- */
+function bind(){
+  root.querySelectorAll('[data-a]').forEach(function(el){ el.onclick = function(ev){ ev.preventDefault(); onAct(el.getAttribute('data-a')); }; });
+  root.querySelectorAll('[data-type]').forEach(function(el){ el.onclick = function(){ S.form.type = el.getAttribute('data-type'); S.form.picks = ['','','']; render(); }; });
+  root.querySelectorAll('[data-pick]').forEach(function(el){ el.onchange = function(){ S.form.picks[+el.getAttribute('data-pick')] = el.value; render(); }; });
+  root.querySelectorAll('[data-cancel]').forEach(function(el){ el.onclick = function(){
+    var b = S.myBets.filter(function(x){ return x.id === el.getAttribute('data-cancel'); })[0];
+    ask(TYPE_NAME[b.type] + '「' + b.pickNames + '」' + b.points + 'Pの券を取り消す？', function(){ act(function(){ return post({action: 'cancelBet', name: S.me, pin: S.pin, id: b.id}).then(function(){ toast('取り消しました'); return load(); }); }); });
+  }; });
+  root.querySelectorAll('[data-mdel]').forEach(function(el){ el.onclick = function(){ keepMembers(); S.admin.members.splice(+el.getAttribute('data-mdel'), 1); render(); }; });
+}
+function keepMembers(){
+  if (!S.admin) return;
+  S.admin.members.forEach(function(m, i){
+    var n = root.querySelector('[data-mn="' + i + '"]'), p = root.querySelector('[data-mp="' + i + '"]'), b = root.querySelector('[data-mb="' + i + '"]');
+    if (n) m.name = n.value.trim(); if (p) m.pin = p.value.trim(); if (b) m.noBonus = b.checked;
+  });
+}
+function onAct(a){
+  var f = S.form, used = S.myBets.reduce(function(s,b){ return s + b.points; }, 0), left = (S.data ? S.data.startPoints : 10) - used;
+  if (a === 'prev'){ S.month = shiftMonth(S.month, -1); load(); }
+  if (a === 'next'){ S.month = shiftMonth(S.month, 1); load(); }
+  if (a === 'reload') load();
+  if (a === 'logout'){ logout(); render(); }
+  if (a === 'login') act(function(){
+    var n = document.getElementById('lname').value, p = document.getElementById('lpin').value;
+    if (!n || !p){ toast('名前と番号を入れてね'); return; }
+    return post({action: 'login', month: S.month, name: n, pin: p}).then(function(d){
+      S.me = d.name; S.pin = p; S.myBets = d.bets; try{ sessionStorage.setItem('boys-yoso-me', JSON.stringify({name: S.me, pin: p})); }catch(e){}
+      toast('ようこそ、' + S.me + '！'); render();
+    });
+  });
+  if (a === 'minus'){ f.points = Math.max(1, f.points - 1); render(); }
+  if (a === 'plus'){ f.points = Math.min(left, f.points + 1); render(); }
+  if (a === 'all'){ f.points = Math.max(1, left); render(); }
+  if (a === 'buy'){
+    var cnt = f.type === 'san' ? 3 : 1, picks = f.picks.slice(0, cnt), names = picks.map(nameOf);
+    ask(TYPE_NAME[f.type] + '「' + names.join('→') + '」に' + f.points + 'P賭ける？', function(){ act(function(){
+      return post({action: 'addBet', month: S.month, name: S.me, pin: S.pin, type: f.type, picks: picks, pickNames: names, points: f.points}).then(function(){
+        S.form = {type: f.type, picks: ['','',''], points: 1}; toast('券を買ったよ！ 結果は月末に🎉'); return load();
+      });
+    }); });
+  }
+  if (a === 'admin'){ S.view = 'admin'; render(); }
+  if (a === 'back'){ S.view = 'main'; S.admin = null; render(); }
+  if (a === 'aunlock') act(function(){
+    var p = document.getElementById('apin').value;
+    return post({action: 'adminGet', adminPin: p}).then(function(d){ S.adminPin = p; S.admin = d; if (!S.admin.members.length) S.admin.members.push({name: '', pin: '', noBonus: false}); render(); });
+  });
+  if (a === 'madd'){ keepMembers(); S.admin.members.push({name: '', pin: '', noBonus: false}); render(); }
+  if (a === 'msave') act(function(){ keepMembers(); return post({action: 'setMembers', adminPin: S.adminPin, members: S.admin.members}).then(function(){ toast('部員を保存しました'); return load().then(function(){ S.view = 'admin'; render(); }); }); });
+  if (a === 'dlsave') act(function(){ var day = Number(document.getElementById('dlday').value); return post({action: 'setDeadline', adminPin: S.adminPin, month: S.month, day: day}).then(function(){ S.admin.deadlines[S.month] = day; toast(mOf(S.month) + '月の締め切りを' + day + '日にしました'); return load().then(function(){ S.view = 'admin'; render(); }); }); });
+  if (a === 'hall'){
+    var res = settle(S.data.bets, rankingOf(S.month, S.rec), mankinOf(S.month, S.rec));
+    ask('この結果で確定する？', function(){ act(function(){ return post({action: 'setHall', adminPin: S.adminPin, month: S.month, winners: res.winners.map(function(w){ return w.name; }), points: res.winners.length ? res.winners[0].final : null, bonus: res.bonus}).then(function(){ toast('確定しました！'); return load().then(function(){ S.view = 'admin'; render(); }); }); }); });
+  }
+}
+load();
+</script>
+</body>
+</html>
