@@ -322,7 +322,7 @@ function rulesHtml(d){
     sec('賭け方は3つ', '単勝：ラビ王ランキングの1位を当てる<br>3連単：1位→2位→3位を順番どおり当てる<br>まんキン単勝：その月いちばん役満を出す人を当てる（ママ・店長・BOYSも入るよ）') +
     sec('配当のしくみ', '賭け方ごとに別々の箱。当たった人は、自分の賭け方の箱のポイントだけを、賭けたポイントの割合で分けるよ。ほかの賭け方で外れたポイントは回ってこない。だれも当たらなかった箱のポイントはなくなるよ。まんキンが2人以上のときは、箱を人数で分けて山分け。') +
     sec('オッズと発表', '締め切り（ふだんは15日の営業終了）までは、ほかの人のうさ券は秘密。締め切りの次の日にオッズ発表。月末に全員のうさ券をオープン！') +
-    sec('優勝とボーナス', '月末にポイントがいちばん多い人が優勝（1回以上賭けた人だけ）。ボーナス2,000円を優勝した人で山分け。ママとめぐは名誉の優勝だよ。') +
+    sec('優勝とボーナス', '月末にポイントがいちばん多い人が優勝。うさ券を1枚も買わなかった人は、10Pのままでも優勝できないよ。ボーナス2,000円を優勝した人で山分け。ママとめぐは名誉の優勝だよ。') +
     '</div>';
 }
 function hallHtml(d){
@@ -337,6 +337,10 @@ function adminHtml(){
   var h = '<div class="card"><h3>👥 部員</h3><div class="mrow muted"><span>名前</span><span>4けたの番号</span><span>名誉のみ</span><span></span></div>';
   h += a.members.map(function(m, i){ return '<div class="mrow"><input data-mn="' + i + '" value="' + esc(m.name) + '" placeholder="名前"><input data-mp="' + i + '" value="' + esc(m.pin) + '" inputmode="numeric" maxlength="4" placeholder="0000"><label><input type="checkbox" data-mb="' + i + '" ' + (m.noBonus ? 'checked' : '') + '></label><button class="btn ghost" data-mdel="' + i + '">✕</button></div>'; }).join('');
   h += '<button class="btn sub block" data-a="madd">＋ 部員を足す</button><div class="muted" style="margin:6px 0">「名誉のみ」にチェックした人は、優勝してもボーナスなし（ママ・めぐ）</div><button class="btn main block" data-a="msave">部員を保存</button></div>';
+  // だれがうさ券を買ったか（どれに何P賭けたかは出さない）
+  var bt = d.bettors || {};
+  h += '<div class="card"><h3>🎫 ' + mOf(S.month) + '月、うさ券を買った人</h3><div class="muted" style="margin-bottom:6px">どれに何P賭けたかは出ません</div><table>' +
+    d.members.map(function(m){ var n = bt[m.name] || 0; return '<tr><td>' + esc(m.name) + '</td><td class="n">' + (n ? '✅ ' + n + '枚' : '<span class="muted">まだ</span>') + '</td></tr>'; }).join('') + '</table></div>';
   var dl = a.deadlines[S.month] || 15;
   h += '<div class="card"><h3>📅 ' + mOf(S.month) + '月の締め切り</h3><div class="muted">いつもは15日。お試しの月などは変えられるよ（その日の営業終了まで）</div><div style="display:flex;gap:8px;margin-top:8px"><input id="dlday" type="number" min="1" max="31" value="' + dl + '"><button class="btn main" data-a="dlsave" style="white-space:nowrap">日にする</button></div></div>';
   if (d.phase === 'ended' && d.bets){
