@@ -97,6 +97,9 @@
   .dlg .bs{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:999px;font-size:13.5px;z-index:60;max-width:90%;text-align:center;}
   .loading{text-align:center;color:var(--soft);padding:40px 0;}
+  .est{background:var(--gold-s);border:1.5px dashed var(--g);border-radius:12px;padding:10px 12px;margin-top:12px;font-size:13px;line-height:1.6;}
+  .est b{font-family:'M PLUS Rounded 1c';font-size:19px;color:var(--black);}
+  .meyasu{font-size:11px;color:#8A6A00;font-weight:700;}
 </style>
 </head>
 <body>
@@ -158,6 +161,48 @@ function candidates(type, mk){
 }
 var nameOf = function(id){ var p = S.players.filter(function(x){ return x.id === id; })[0]; return p ? p.jan : '？'; };
 function f1(v){ return (Math.floor(v * 10 + 1e-9) / 10).toFixed(1).replace(/\.0$/, ''); }
+
+/* ---------- 目安のオッズ（受付中だけ。今の成績とのこり日数から、ざっくり計算。配当には使わない） ---------- */
+function remainRate(mk){
+  var bd = (S.data && S.data.businessDate) || businessDate(), bm = bd.slice(0,7);
+  if (bm < mk) return 1; if (bm > mk) return 0;
+  var a = mk.split('-').map(Number), dim = new Date(a[0], a[1], 0).getDate();
+  return Math.max(0, (dim - Number(bd.slice(8,10))) / dim);
+}
+function guideWeights(type, mk){
+  var r = remainRate(mk), rule = ruleFor(mk), list = candidates(type, mk), score = {}, act = {}, temp;
+  if (type === 'tan'){
+    rankingOf(mk, S.rec).forEach(function(p){ score[p.id] = p.points; });
+    temp = 2 + 14 * r;           // 月のはじめは差がついても逆転しやすい、月末は今の順位がほぼそのまま
+  } else {
+    list.forEach(function(p){ var st = stats(p.id, S.rec, rule); score[p.id] = st.yakuman; act[p.id] = st.games; });
+    temp = 0.4 + 1.6 * r;
+  }
+  var mx = Math.max.apply(null, [0].concat(list.map(function(p){ return score[p.id] || 0; })));
+  var w = {}, sum = 0;
+  list.forEach(function(p){
+    var x = Math.exp(((score[p.id] || 0) - mx) / temp);
+    if (type === 'mankin') x *= (act[p.id] || 0) + 3;   // たくさん打っている人ほど役満が出やすい
+    w[p.id] = x; sum += x;
+  });
+  return {w: w, sum: sum};
+}
+function guideOdds(type, mk){
+  if (type === 'san') return {};
+  var g = guideWeights(type, mk), o = {};
+  Object.keys(g.w).forEach(function(id){ o[id] = Math.min(99, Math.max(1.1, g.sum / g.w[id])); });
+  return o;
+}
+// 3連単は、選んだ組み合わせ1つだけ。1位になる確率 × のこりの人の中で2位になる確率 × のこりの中で3位になる確率
+function guideSan(picks, mk){
+  var g = guideWeights('tan', mk), left = g.sum, pr = 1;
+  for (var i = 0; i < picks.length; i++){
+    var x = g.w[picks[i]]; if (!x || left <= 0) return null;
+    pr *= x / left; left -= x;
+  }
+  return Math.min(999, Math.max(1.1, 1 / pr));
+}
+function oddsTxt(v, cap){ cap = cap || 99; return v >= cap ? cap + '倍以上' : (v < 10 ? f1(v) : String(Math.floor(v))) + '倍'; }
 
 /* ---------- 結果の計算（取り分0%、同着は山分け、当たりなしはポイントなし） ---------- */
 function settle(bets, rk, mk){
@@ -233,7 +278,7 @@ function render(loading){
   else if (d.phase !== 'ended') h += loginHtml(d);
   if (d.phase === 'closed') h += oddsHtml(d);
   if (res) h += resultHtml(d, res, rk, mk);
-  if (d.phase !== 'ended') h += standingsHtml(rk, mk);
+  if (d.phase !== 'ended') h += standingsHtml(rk, mk, d.phase === 'open');
   h += hallHtml(d);
   h += rulesHtml(d);
   h += '<div class="foot">' + (S.me ? '<a href="#" data-a="logout">' + esc(S.me) + ' からログアウト</a>　' : '') + '<a href="#" data-a="admin">ママの設定</a></div>';
@@ -281,18 +326,26 @@ function buyHtml(d, rk){
   var rkPos = {}; rk.forEach(function(p, i){ rkPos[p.id] = i + 1; });
   var mk = mankinOf(S.month, S.rec), ym = {}; S.players.forEach(function(p){ ym[p.id] = stats(p.id, S.rec, ruleFor(S.month)).yakuman; });
   var list = candidates(f.type, S.month).slice().sort(function(a,b){ return f.type === 'mankin' ? (ym[b.id] - ym[a.id]) || a.jan.localeCompare(b.jan,'ja') : ((rkPos[a.id]||999) - (rkPos[b.id]||999)) || a.jan.localeCompare(b.jan,'ja'); });
-  var cnt = f.type === 'san' ? 3 : 1;
+  var cnt = f.type === 'san' ? 3 : 1, go = guideOdds(f.type, S.month);
   var h = '<div class="card"><h3>✍️ うさ券を買う</h3><div class="seg">' + ['tan','san','mankin'].map(function(t){ return '<button data-type="' + t + '" class="' + (f.type === t ? 'on' : '') + '">' + TYPE_NAME[t] + '</button>'; }).join('') + '</div>';
   h += '<label class="f">' + (f.type === 'tan' ? '1位になる人' : f.type === 'san' ? '1位・2位・3位を順番どおり' : '今月のまんキン（いちばん役満を出す人）') + '</label>';
   for (var i = 0; i < cnt; i++){
     var others = f.picks.slice(0, cnt).filter(function(x, j){ return j !== i && x; });
     h += '<div class="pickrow">' + (cnt > 1 ? '<div class="no">' + (i+1) + '位</div>' : '') + '<select data-pick="' + i + '"><option value="">えらぶ</option>' + list.map(function(p){
-      var tag = f.type === 'mankin' ? (ym[p.id] ? '（役満' + ym[p.id] + '回）' : '') : (rkPos[p.id] ? '（今' + rkPos[p.id] + '位）' : '');
+      var info = f.type === 'mankin' ? (ym[p.id] ? '役満' + ym[p.id] + '回' : '') : (rkPos[p.id] ? '今' + rkPos[p.id] + '位' : '');
+      if (go[p.id]) info += (info ? '・' : '') + '目安' + oddsTxt(go[p.id]);
+      var tag = info ? '（' + info + '）' : '';
       return '<option value="' + esc(p.id) + '" ' + (f.picks[i] === p.id ? 'selected' : '') + ' ' + (others.indexOf(p.id) >= 0 ? 'disabled' : '') + '>' + esc(p.jan) + tag + '</option>'; }).join('') + '</select></div>';
   }
   h += '<label class="f">賭けるポイント（のこり' + left + 'P）</label><div class="stepper"><button data-a="minus">−</button><div class="u">' + f.points + 'P</div><button data-a="plus">＋</button><button class="btn allin" data-a="all">ぜんぶ賭ける</button></div>';
   var ready = f.picks.slice(0, cnt).every(Boolean);
-  return h + '<button class="btn pink block" style="margin-top:14px" data-a="buy" ' + (ready ? '' : 'disabled') + '>このうさ券を買う</button><div class="muted" style="margin-top:8px">ほかの人のうさ券は、締め切りまで秘密。オッズは締め切りのあとに発表されるよ。</div></div>';
+  var g = !ready ? null : f.type === 'san' ? guideSan(f.picks.slice(0, 3), S.month) : go[f.picks[0]], cap = f.type === 'san' ? 999 : 99;
+  if (g){
+    g = g < 10 ? Math.floor(g * 10 + 1e-9) / 10 : Math.floor(g);   // 見せている倍率どおりに計算
+    h += '<div class="est">' + (f.type === 'san' ? '<span class="meyasu">' + f.picks.slice(0, 3).map(function(id){ return esc(nameOf(id)); }).join('→') + '</span><br>' : '') +
+      '当たったら（目安）：<b>' + (g >= cap ? 'ものすごく大きい！' : f1(f.points * g) + 'P') + '</b>　<span class="meyasu">目安' + oddsTxt(g, cap) + '</span><br><span class="muted">今の成績から出した目安だよ。ほんとの配当は締め切りのあと、みんなのうさ券で決まるから、ちがうこともあるよ</span></div>';
+  }
+  return h + '<button class="btn pink block" style="margin-top:14px" data-a="buy" ' + (ready ? '' : 'disabled') + '>このうさ券を買う</button><div class="muted" style="margin-top:8px">ほかの人のうさ券は、締め切りまで秘密。' + (f.type === 'san' ? '3連単は、3人とも選ぶと目安のオッズが出るよ。' : '') + 'ほんとのオッズは締め切りのあとに発表されるよ。</div></div>';
 }
 function oddsHtml(d){
   var bets = d.bets || [];
@@ -316,11 +369,17 @@ function resultHtml(d, res, rk, mk){
   h += '<div class="muted" style="margin-top:8px">当たりがいなかった賭け方のポイントは、なくなります。まんキンが2人以上のときは、配当を山分けしています。</div>';
   return h + '</div>';
 }
-function standingsHtml(rk, mk){
+function standingsHtml(rk, mk, open){
   var h = '<div class="card"><h3>📊 いまのランキング</h3>';
   if (!rk.length) return h + '<div class="empty">まだ成績がありません</div></div>';
-  h += '<table><tr><th>順位</th><th>じゃんネーム</th><th class="n">ポイント</th></tr>' + rk.slice(0, 10).map(function(p, i){ return '<tr><td>' + (i+1) + '</td><td>' + esc(p.jan) + '</td><td class="n">' + p.points + 'P</td></tr>'; }).join('') + '</table>';
+  var gt = open ? guideOdds('tan', S.month) : {};
+  h += '<table><tr><th>順位</th><th>じゃんネーム</th><th class="n">ポイント</th>' + (open ? '<th class="n">単勝の目安</th>' : '') + '</tr>' + rk.slice(0, 10).map(function(p, i){ return '<tr><td>' + (i+1) + '</td><td>' + esc(p.jan) + '</td><td class="n">' + p.points + 'P</td>' + (open ? '<td class="n"><span class="odds">' + (gt[p.id] ? oddsTxt(gt[p.id]) : '—') + '</span></td>' : '') + '</tr>'; }).join('') + '</table>';
   h += '<div class="muted" style="margin-top:8px">いまのまんキン：' + (mk.players.length ? mk.players.map(function(p){ return esc(p.jan); }).join('・') + '（役満' + mk.max + '回）' : 'まだなし') + '</div>';
+  if (open){
+    var gm = guideOdds('mankin', S.month), top = Object.keys(gm).sort(function(a, b){ return gm[a] - gm[b]; }).slice(0, 3);
+    h += '<div class="muted">まんキン単勝の目安：' + top.map(function(id){ return esc(nameOf(id)) + ' ' + oddsTxt(gm[id]); }).join('・') + '</div>';
+    h += '<div class="muted" style="margin-top:4px">目安のオッズは、今の成績とのこり日数から出したもの。ほんとの配当は締め切りのあとに決まるよ</div>';
+  }
   return h + '</div>';
 }
 function rulesHtml(d){
@@ -329,6 +388,7 @@ function rulesHtml(d){
     sec('ポイントとうさ券', '毎月1日に全員' + d.startPoints + 'Pからスタート。うさ券は1か月' + d.maxTickets + '枚まで。1枚に何Pでも賭けられるよ。') +
     sec('賭け方は3つ', '単勝：ラビ王ランキングの1位を当てる<br>3連単：1位→2位→3位を順番どおり当てる<br>まんキン単勝：その月いちばん役満を出す人を当てる（ママ・店長・BOYSも入るよ）') +
     sec('配当のしくみ', '賭け方ごとに別々の箱。当たった人は、自分の賭け方の箱のポイントだけを、賭けたポイントの割合で分けるよ。ほかの賭け方で外れたポイントは回ってこない。だれも当たらなかった箱のポイントはなくなるよ。まんキンが2人以上のときは、箱を人数で分けて山分け。') +
+    sec('目安のオッズ', '受付中は、今のランキング（まんキンは役満の回数）とのこり日数から出した「目安」の倍率が見られるよ。3連単は、1位・2位・3位を選んだ組み合わせの分だけ出るよ。ほかの子がどう賭けたかは入っていないから、ほんとの配当とはちがうこともあるよ。') +
     sec('オッズと発表', '締め切り（ふだんは15日の営業終了）までは、ほかの人のうさ券は秘密。締め切りの次の日にオッズ発表。月末に全員のうさ券をオープン！') +
     sec('優勝とボーナス', '月末にポイントがいちばん多い人が優勝。うさ券を1枚も買わなかった人は、10Pのままでも優勝できないよ。ボーナス2,000円を優勝した人で山分け。ママとめぐは名誉の優勝だよ。') +
     '</div>';
