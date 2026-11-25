@@ -172,8 +172,13 @@ function remainRate(mk){
 function guideWeights(type, mk){
   var r = remainRate(mk), rule = ruleFor(mk), list = candidates(type, mk), score = {}, act = {}, temp;
   if (type === 'tan'){
-    rankingOf(mk, S.rec).forEach(function(p){ score[p.id] = p.points; });
-    temp = 2 + 14 * r;           // 月のはじめは差がついても逆転しやすい、月末は今の順位がほぼそのまま
+    var rk = rankingOf(mk, S.rec); rk.forEach(function(p){ score[p.id] = p.points; });
+    // その月のポイントのたまり方（1日あたり）× のこり日数 で、これからどのくらい差が動くかを見る
+    var a = mk.split('-').map(Number), dim = new Date(a[0], a[1], 0).getDate();
+    var gone = Math.max(1, Math.round(dim * (1 - r)));
+    var top = Math.max.apply(null, [0].concat(rk.map(function(p){ return Math.abs(p.points); })));
+    var pace = Math.max(3, top / gone);
+    temp = 2 + 0.6 * pace * dim * r;  // 月のはじめは逆転しやすい、月末は今の順位がほぼそのまま
   } else {
     list.forEach(function(p){ var st = stats(p.id, S.rec, rule); score[p.id] = st.yakuman; act[p.id] = st.games; });
     temp = 0.4 + 1.6 * r;
