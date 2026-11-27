@@ -394,7 +394,7 @@ function rulesHtml(d){
     sec('賭け方は3つ', '単勝：ラビ王ランキングの1位を当てる<br>3連単：1位→2位→3位を順番どおり当てる<br>まんキン単勝：その月いちばん役満を出す人を当てる（ママ・店長・BOYSも入るよ）') +
     sec('配当のしくみ', '賭け方ごとに別々の箱。当たった人は、自分の賭け方の箱のポイントだけを、賭けたポイントの割合で分けるよ。ほかの賭け方で外れたポイントは回ってこない。だれも当たらなかった箱のポイントはなくなるよ。まんキンが2人以上のときは、箱を人数で分けて山分け。') +
     sec('目安のオッズ', '受付中は、今のランキング（まんキンは役満の回数）とのこり日数から出した「目安」の倍率が見られるよ。3連単は、1位・2位・3位を選んだ組み合わせの分だけ出るよ。ほかの子がどう賭けたかは入っていないから、ほんとの配当とはちがうこともあるよ。') +
-    sec('オッズと発表', '締め切り（ふだんは15日の営業終了）までは、ほかの人のうさ券は秘密。締め切りの次の日にオッズ発表。月末に全員のうさ券をオープン！') +
+    sec('オッズと発表', '締め切り（ふだんは15日の営業終了）までは、ほかの人のうさ券は秘密。締め切りの次の日にオッズ発表。月末（ママが最終営業日を決めたときは、その日）に全員のうさ券をオープン！') +
     sec('優勝とボーナス', '月末にポイントがいちばん多い人が優勝。うさ券を1枚も買わなかった人は、10Pのままでも優勝できないよ。ボーナス2,000円を優勝した人で山分け。ママとめぐは名誉の優勝だよ。') +
     '</div>';
 }
@@ -414,11 +414,12 @@ function adminHtml(){
   var bt = d.bettors || {};
   h += '<div class="card"><h3>🎫 ' + mOf(S.month) + '月、うさ券を買った人</h3><div class="muted" style="margin-bottom:6px">どれに何P賭けたかは出ません</div><table>' +
     d.members.map(function(m){ var n = bt[m.name] || 0; return '<tr><td>' + esc(m.name) + '</td><td class="n">' + (n ? '✅ ' + n + '枚' : '<span class="muted">まだ</span>') + '</td></tr>'; }).join('') + '</table></div>';
-  var dl = a.deadlines[S.month] || 15;
+  var dl = a.deadlines[S.month] || 15, ed = (a.ends || {})[S.month] || '';
   h += '<div class="card"><h3>📅 ' + mOf(S.month) + '月の締め切り</h3><div class="muted">いつもは15日。お試しの月などは変えられるよ（その日の営業終了まで）</div><div style="display:flex;gap:8px;margin-top:8px"><input id="dlday" type="number" min="1" max="31" value="' + dl + '"><button class="btn main" data-a="dlsave" style="white-space:nowrap">日にする</button></div></div>';
+  h += '<div class="card"><h3>🏁 ' + mOf(S.month) + '月の結果発表の日</h3><div class="muted">ふだんは空っぽでOK（次の月の1日の朝に結果発表）。最終営業日を入れると、その日から結果発表になるよ。いま' + (ed ? '<b>' + ed + '日</b>' : '<b>月末（ふつう）</b>') + '</div><div style="display:flex;gap:8px;margin-top:8px"><input id="endday" type="number" min="1" max="31" placeholder="最終営業日" value="' + ed + '"><button class="btn main" data-a="endsave" style="white-space:nowrap">日にする</button></div>' + (ed ? '<button class="btn ghost block" style="margin-top:8px" data-a="endclear">ふつう（月末）にもどす</button>' : '') + '</div>';
   if (d.phase === 'ended' && d.bets){
     var res = settle(d.bets, rankingOf(S.month, S.rec), mankinOf(S.month, S.rec));
-    h += '<div class="card"><h3>🏆 ' + mOf(S.month) + '月の結果を確定</h3><div class="muted">ランキングの成績を全部入れ終わってから押してね。歴代のポイントゲッターに残ります。</div><div style="margin:8px 0;font-weight:800">' + (res.winners.length ? res.winners.map(function(w){ return esc(w.name); }).join('・') + '（' + f1(res.winners[0].final) + 'P）' : '優勝なし') + '</div><button class="btn pink block" data-a="hall">この結果で確定する</button></div>';
+    h += '<div class="card"><h3>🏆 ' + mOf(S.month) + '月の結果を確定</h3><div class="muted">今日の成績も全部ランキングに入れ終わってから押してね（それまでは結果がまだ動くよ）。歴代のポイントゲッターに残ります。</div><div style="margin:8px 0;font-weight:800">' + (res.winners.length ? res.winners.map(function(w){ return esc(w.name); }).join('・') + '（' + f1(res.winners[0].final) + 'P）' : '優勝なし') + '</div><button class="btn pink block" data-a="hall">この結果で確定する</button></div>';
   }
   return h + '<div class="foot"><a href="#" data-a="back">もどる</a></div>';
 }
@@ -475,6 +476,15 @@ function onAct(a){
   if (a === 'madd'){ keepMembers(); S.admin.members.push({name: '', pin: '', noBonus: false}); render(); }
   if (a === 'msave') act(function(){ keepMembers(); return post({action: 'setMembers', adminPin: S.adminPin, members: S.admin.members}).then(function(){ toast('部員を保存しました'); return load().then(function(){ S.view = 'admin'; render(); }); }); });
   if (a === 'dlsave') act(function(){ var day = Number(document.getElementById('dlday').value); return post({action: 'setDeadline', adminPin: S.adminPin, month: S.month, day: day}).then(function(){ S.admin.deadlines[S.month] = day; toast(mOf(S.month) + '月の締め切りを' + day + '日にしました'); return load().then(function(){ S.view = 'admin'; render(); }); }); });
+  if (a === 'endsave' || a === 'endclear') act(function(){
+    var day = a === 'endclear' ? 0 : Number(document.getElementById('endday').value);
+    if (a === 'endsave' && !(day >= 1 && day <= 31)){ toast('日にちを入れてね'); return; }
+    return post({action: 'setEnd', adminPin: S.adminPin, month: S.month, day: day}).then(function(){
+      S.admin.ends = S.admin.ends || {}; if (day) S.admin.ends[S.month] = day; else delete S.admin.ends[S.month];
+      toast(day ? mOf(S.month) + '月は' + day + '日から結果発表にしました' : 'ふつう（月末）にもどしました');
+      return load().then(function(){ S.view = 'admin'; render(); });
+    });
+  });
   if (a === 'hall'){
     var res = settle(S.data.bets, rankingOf(S.month, S.rec), mankinOf(S.month, S.rec));
     ask('この結果で確定する？', function(){ act(function(){ return post({action: 'setHall', adminPin: S.adminPin, month: S.month, winners: res.winners.map(function(w){ return w.name; }), points: res.winners.length ? res.winners[0].final : null, bonus: res.bonus}).then(function(){ toast('確定しました！'); return load().then(function(){ S.view = 'admin'; render(); }); }); }); });
